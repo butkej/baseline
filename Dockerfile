@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && mkdir root/.conda \
-    && sh Minconda3-latest-Linux-x86_64.sh -b \
-    && rm -f Miniconda3-latest-Linux-x86_64.sh
+    && chmod +x Miniconda3-latest-Linux-x86_64.sh\
+    && sh Miniconda3-latest-Linux-x86_64.sh -b
 
 RUN conda create -y -n asuka python=3.9
 RUN conda install pytorch-lightning=1.7.7 -c conda-forge
@@ -22,5 +22,4 @@ RUN conda install scikit-learn=1.1.1 -c conda-for
 COPY . HIA/
 
 RUN /bin/bash -c "cd HIA \
-    && source activate asuka \
-    && pip install -r requirements.txt"
+    && source activate asuka"
