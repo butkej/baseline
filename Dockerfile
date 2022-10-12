@@ -17,9 +17,9 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
 
 RUN conda create -y -n asuka python=3.9
 RUN conda install pytorch-lightning=1.7.7 -c conda-forge
-RUN conda install scikit-learn=1.1.1 -c conda-for
+RUN conda install scikit-learn=1.1.1 -c conda-forge
 
 COPY . HIA/
 
-RUN /bin/bash -c "cd HIA \
+RUN /bin/bash -c "cd HIA/ \
     && source activate asuka"
