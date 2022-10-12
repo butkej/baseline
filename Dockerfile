@@ -1,5 +1,5 @@
 #FROM ubuntu:20.04
-FROM nvdia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04 
+FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04
 
 ENV PATH="/root/miniconda3/bin:${PATH}"
 ARG PATH="/root/miniconda3/bin:${PATH}"
@@ -19,8 +19,8 @@ RUN conda create -y -n asuka python=3.9
 RUN conda install pytorch-lightning=1.7.7 -c conda-forge
 RUN conda install scikit-learn=1.1.1 -c conda-for
 
-#COPY . src/
+COPY . HIA/
 
-RUN /bin/bash -c "cd src \
+RUN /bin/bash -c "cd HIA \
     && source activate asuka \
-    && pip install -r requirements.txt""
+    && pip install -r requirements.txt"
