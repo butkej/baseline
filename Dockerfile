@@ -8,18 +8,23 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     # package-b=1.3.* \
     wget \
+    vim \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && mkdir root/.conda \
     && chmod +x Miniconda3-latest-Linux-x86_64.sh\
-    && sh Miniconda3-latest-Linux-x86_64.sh -b
+    && sh Miniconda3-latest-Linux-x86_64.sh -b \
+    && rm -f Miniconda3-latest-Linux-x86_64.sh
 
 RUN conda create -y -n asuka python=3.9
 RUN conda install pytorch-lightning=1.7.7 -c conda-forge
 RUN conda install scikit-learn=1.1.1 -c conda-forge
+RUN conda install ipython
+RUN conda install fastai -c conda-forge
+RUN conda install pandas tqdm h5py seaborn pillow
 
-COPY . HIA/
+COPY . baseline/
 
-RUN /bin/bash -c "cd HIA/ \
+RUN /bin/bash -c "cd baseline/HIA/ \
     && source activate asuka"
