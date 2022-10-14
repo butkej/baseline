@@ -1,0 +1,5 @@
+conda install pytorch-lightning=1.7.7 -c conda-forge
+conda install scikit-learn=1.1.1 -c conda-forge
+conda install ipython
+conda install fastai -c fastchan
+conda install pandas tqdm h5py seaborn pillow

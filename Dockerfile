@@ -18,13 +18,9 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && rm -f Miniconda3-latest-Linux-x86_64.sh
 
 RUN conda create -y -n asuka python=3.9
-RUN conda install pytorch-lightning=1.7.7 -c conda-forge
-RUN conda install scikit-learn=1.1.1 -c conda-forge
-RUN conda install ipython
-RUN conda install fastai -c fastchan
-RUN conda install pandas tqdm h5py seaborn pillow
 
 COPY . baseline/
 
-RUN /bin/bash -c "cd baseline/HIA/ \
-    && source activate asuka"
+RUN /bin/bash -c "cd baseline/ \
+    && source activate asuka \
+    && bash conda_env.txt"
