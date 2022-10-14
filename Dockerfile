@@ -21,7 +21,7 @@ RUN conda create -y -n asuka python=3.9
 RUN conda install pytorch-lightning=1.7.7 -c conda-forge
 RUN conda install scikit-learn=1.1.1 -c conda-forge
 RUN conda install ipython
-RUN conda install fastai -c conda-forge
+RUN conda install fastai -c fastchan
 RUN conda install pandas tqdm h5py seaborn pillow
 
 COPY . baseline/
