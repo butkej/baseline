@@ -1,0 +1,4 @@
+conda install pytorch-lightning=1.7.7 cudatoolkit=11.6 -c conda-forge -c pytorch
+conda install scikit-learn=1.1.1 opencv -c conda-forge
+conda install ipython pandas tqdm h5py seaborn pillow
+conda install fastai -c fastchan

@@ -9,6 +9,10 @@ RUN apt-get update && apt-get install -y \
     # package-b=1.3.* \
     wget \
     vim \
+    # the following installs are cv2 requirements not automatically present in docker...
+    ffmpeg \
+    libsm6 \
+    libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \

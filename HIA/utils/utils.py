@@ -17,10 +17,10 @@ import torch.optim as optim
 import pickle
 from torchvision import models
 import json
-from pytorch_pretrained_vit import ViT
 from ipywidgets import IntProgress
 import warnings
-from efficientnet_pytorch import EfficientNet
+#from pytorch_pretrained_vit import ViT
+#from efficientnet_pytorch import EfficientNet
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
