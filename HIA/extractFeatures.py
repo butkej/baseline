@@ -19,160 +19,155 @@ import os
 
 ##############################################################################
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 ##############################################################################
 
-def Save_hdf5(output_dir, asset_dict, mode='a'):
-    
-	file = h5py.File(output_dir, mode)
 
-	for key, val in asset_dict.items():
-		data_shape = val.shape
-        
-		if key not in file:
-			data_type = val.dtype
-			chunk_shape = (1, ) + data_shape[1:]
-			maxshape = (None, ) + data_shape[1:]
-			dset = file.create_dataset(key, shape = data_shape, maxshape = maxshape, chunks = chunk_shape, dtype = data_type)
-			dset[:] = val
-		else:
-			dset = file[key]
-			dset.resize(len(dset) + data_shape[0], axis = 0)
-			dset[-data_shape[0]:] = val  
+def Save_hdf5(output_dir, asset_dict, mode="a"):
 
-	file.close()
-	return output_dir
+    file = h5py.File(output_dir, mode)
+
+    for key, val in asset_dict.items():
+        data_shape = val.shape
+
+        if key not in file:
+            data_type = val.dtype
+            chunk_shape = (1,) + data_shape[1:]
+            maxshape = (None,) + data_shape[1:]
+            dset = file.create_dataset(
+                key,
+                shape=data_shape,
+                maxshape=maxshape,
+                chunks=chunk_shape,
+                dtype=data_type,
+            )
+            dset[:] = val
+        else:
+            dset = file[key]
+            dset.resize(len(dset) + data_shape[0], axis=0)
+            dset[-data_shape[0] :] = val
+
+    file.close()
+    return output_dir
+
 
 ##############################################################################
 
-def Compute_w_loader(file_path, output_path, model, batch_size = 8, verbose = 0, print_every = 20, pretrained = True, target_patch_size = -1):
 
-    dataset = Whole_Slide_Bag(file_path = file_path, pretrained = pretrained, target_patch_size = target_patch_size)    
-    
-    kwargs = {'num_workers': 0, 'pin_memory': True} if device.type == "cuda" else {}
-    loader = DataLoader(dataset = dataset, batch_size = batch_size, **kwargs, collate_fn = Collate_features)
+def Compute_w_loader(
+    file_path,
+    output_path,
+    model,
+    batch_size=8,
+    verbose=0,
+    print_every=20,
+    pretrained=True,
+    target_patch_size=-1,
+):
+
+    dataset = Whole_Slide_Bag(
+        file_path=file_path, pretrained=pretrained, target_patch_size=target_patch_size
+    )
+
+    kwargs = {"num_workers": 0, "pin_memory": True} if device.type == "cuda" else {}
+    loader = DataLoader(
+        dataset=dataset, batch_size=batch_size, **kwargs, collate_fn=Collate_features
+    )
     if verbose > 0:
-        print('processing {}: total of {} batches'.format(file_path, len(loader)))
-        
-    mode = 'w'
-    
+        print("processing {}: total of {} batches".format(file_path, len(loader)))
+
+    mode = "w"
+
     for count, (batch, coords) in enumerate(loader):
-        with torch.no_grad():	
+        with torch.no_grad():
             if count % print_every == 0:
-                print('batch {}/{}, {} files processed'.format(count, len(loader), count * batch_size))
+                print(
+                    "batch {}/{}, {} files processed".format(
+                        count, len(loader), count * batch_size
+                    )
+                )
             batch = batch.to(device, non_blocking=True)
             features = model(batch)
             features = features.cpu().detach().numpy()
-            asset_dict = {'features': features, 'coords': coords}
+            asset_dict = {"features": features, "coords": coords}
             Save_hdf5(output_path, asset_dict, mode=mode)
-            mode = 'a'
-            
+            mode = "a"
+
     return output_path
-                        
+
 
 ##############################################################################
-    
+
+
 def load_model_weights(model, weights):
-    
+
     model_dict = model.state_dict()
     weights = {k: v for k, v in weights.items() if k in model_dict}
-    
+
     if weights == {}:
         print("No weight could be loaded..")
-        
+
     model_dict.update(weights)
     model.load_state_dict(model_dict)
-    
+
     return model
 
+
 ##############################################################################
-    
-def ExtractFeatures(data_dir, feat_dir, batch_size, target_patch_size = -1, filterData = True):
-    
-    print('initializing dataset')
+
+
+def ExtractFeatures(
+    data_dir, feat_dir, batch_size, target_patch_size=-1, filterData=True
+):
+
+    print("initializing dataset")
     if filterData:
         bags_dataset = data_dir
     else:
-        bags_dataset = glob.glob(data_dir + '/*')
-        
-    os.makedirs(feat_dir, exist_ok = True)
-    
-    print('loading model checkpoint')
+        bags_dataset = glob.glob(data_dir + "/*")
 
-    model = Resnet50_baseline(pretrained = True)       
+    os.makedirs(feat_dir, exist_ok=True)
+
+    print("loading model checkpoint")
+
+    model = Resnet50_baseline(pretrained=True)
     model = model.to(device)
     model.eval()
     total = len(bags_dataset)
 
-        
     for bag_candidate_idx in range(total):
         bag_candidate = bags_dataset[bag_candidate_idx]
         bag_name = os.path.basename(os.path.normpath(bag_candidate))
-        print('\nprogress: {}/{}'.format(bag_candidate_idx, total))
-        bag_base = bag_name.split('\\')[-1]
-        
-        if not os.path.exists(os.path.join(feat_dir, bag_base + '.pt')):
-            
+        print("\nprogress: {}/{}".format(bag_candidate_idx, total))
+        bag_base = bag_name.split("\\")[-1]
+
+        if not os.path.exists(os.path.join(feat_dir, bag_base + ".pt")):
+
             print(bag_name)
-            
+
             output_path = os.path.join(feat_dir, bag_name)
             file_path = bag_candidate
-            output_file_path = Compute_w_loader(file_path, output_path, 
-    												model = model, batch_size = batch_size, 
-    												verbose = 1, print_every = 20,
-    												target_patch_size = target_patch_size)
-                        
-            if os.path.exists (output_file_path):
+            output_file_path = Compute_w_loader(
+                file_path,
+                output_path,
+                model=model,
+                batch_size=batch_size,
+                verbose=1,
+                print_every=20,
+                target_patch_size=target_patch_size,
+            )
+
+            if os.path.exists(output_file_path):
                 file = h5py.File(output_file_path, "r")
-                features = file['features'][:]
-                
-                print('features size: ', features.shape)
-                print('coordinates size: ', file['coords'].shape)
-                
+                features = file["features"][:]
+
+                print("features size: ", features.shape)
+                print("coordinates size: ", file["coords"].shape)
+
                 features = torch.from_numpy(features)
-                torch.save(features, os.path.join(feat_dir, bag_base+'.pt'))
+                torch.save(features, os.path.join(feat_dir, bag_base + ".pt"))
                 file.close()
 
+
 ##############################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
