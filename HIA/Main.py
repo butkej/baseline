@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description="Main Script to Run Training")
 parser.add_argument(
     "--adressExp",
     type=str,
-    default=r"L:\Experiments\DACHS_MIL_TRAINFULL_EarlystopFalse.txt",
+    default="/baseline/HIA/experiments/CONFIG_1.txt",
     help="Adress to the experiment File",
 )
 args = parser.parse_args()

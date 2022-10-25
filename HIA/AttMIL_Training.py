@@ -311,7 +311,7 @@ def AttMIL_Training(args):
                         )
                     )
                     model = model.to(device)
-                    test_dl = dls.test_dl(test_Data)
+                    test_dl = dls.test_dl(test_data)
                     probsList = Validate_model_AttMIL(model=model, dataloaders=test_dl)
 
                     probs = {}
