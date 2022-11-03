@@ -12,7 +12,7 @@ def seed_everything(seed: int = 3407) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -34,6 +34,15 @@ def parse_args():
 
     # General
     parser.add_argument(
+        "-b",
+        "--baseline",
+        dest="baseline",
+        help="choice of baseline strategy",
+        default="classic",
+        type=str,
+    )
+
+    parser.add_argument(
         "-m",
         "--model",
         dest="model",
@@ -51,13 +60,22 @@ def parse_args():
         type=int,
     )
 
+    parser.add_argument(
+        "-k",
+        "--folds",
+        dest="folds",
+        help="amount of folds in k-fold cross val",
+        default=5,
+        type=int,
+    )
+
     # Model-related settings
     parser.add_argument(
         "-g",
         "--gpu",
-        dest="multi_gpu",
+        dest="num_gpus",
         help="choice of gpu amount [integer]",
-        default=0,
+        default=1,
         type=int,
     )
 

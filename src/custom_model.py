@@ -3,6 +3,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+import pytorch_lightning as pl
+
+#######
+
+
+def set_parameter_requires_grad(model, feature_extracting):
+    if feature_extracting:
+        for param in model.parameters():
+            param.requires_grad = False
+
 
 # ResNet
 
@@ -471,3 +481,83 @@ class CLAM_MB(CLAM_SB):
 # VIT
 
 # TODO
+
+#######
+
+# PYTORCH LIGHTNING based baselines
+class ClassicBaseline(pl.LightningModule):
+    def __init__(
+        self,
+        model_name="resnet50",
+        optimizer="adam",
+        num_classes=3,
+        input_size=224,
+        feature_extract=False,
+        use_pretrained=False,
+    ):
+        super().__init__()
+
+        # init a pretrained resnet
+        self.use_pretrained = use_pretrained
+        if model_name == "resnet50":
+            backbone = models.resnet50(pretrained=self.use_pretrained)
+        elif model_name == "resnet18":
+            backbone = models.resnet18(pretrained=self.use_pretrained)
+        elif model_name == "resnet50-bottlenecked":
+            backbone = Resnet50_baseline(pretrained=self.use_pretrained)
+
+        set_parameter_requires_grad(backbone, feature_extract)
+        num_filters = backbone.fc.in_features
+        layers = list(backbone.children())[:-1]
+        self.feature_extractor = nn.Sequential(*layers)
+        self.num_classes = num_classes
+        self.classifier = nn.Linear(num_filters, num_classes)
+        self.input_size = input_size
+        self.criterion = nn.CrossEntropyLoss()
+        self.optimizer = optimizer
+
+    def forward(self, x):
+        self.feature_extractor.eval()
+        with torch.no_grad():
+            representations = self.feature_extractor(x).flatten(1)
+        x = self.classifier(representations)
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self.forward(x)
+        loss = self.criterion(y_hat, y)
+        self.log("train_loss", loss)
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self.forward(x)
+        val_loss = self.criterion(y_hat, y)
+        self.log("val_loss", val_loss)
+
+    def configure_optimizers(self):
+        if self.optimizer == "adam":
+            optim = torch.optim.Adam(
+                self.parameters,
+                lr=0.001,
+                betas=(0.9, 0.999),
+                eps=1e-08,
+                weight_decay=0,
+                amsgrad=False,
+            )
+        elif self.optimizer == "adadelta":
+            optim = torch.optim.Adadelta(
+                self.parameters, lr=1.0, rho=0.9, eps=1e-06, weight_decay=0
+            )
+        elif self.optimizer == "momentum":
+            optim = torch.optim.SGD(
+                self.parameters,
+                lr=0.01,
+                momentum=0.9,
+                dampening=0,
+                weight_decay=0,
+                nesterov=False,
+            )
+        else:
+            print("Error! Choosen optimizer or its parameters are unclear")
+
+        return optim
