@@ -1,5 +1,5 @@
 conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c nvidia
 conda install scikit-learn opencv openslide -c conda-forge
 conda install ipython tqdm h5py seaborn pillow ipywidgets
-conda install fastai -c fastchan
+conda install pytorch-lightning -c conda-forge
 pip install openslide-python

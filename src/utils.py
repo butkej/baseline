@@ -21,6 +21,26 @@ def set_parameter_requires_grad(model, feature_extracting):
             param.requires_grad = False
 
 
+def lightning_mode(args):
+    """If lightning flag is set, load ResNet baseline from pytorch lightning"""
+    if args.lightning:
+        model = custom_model.ClassicBaseline(
+            model_name=args.model,
+            optimizer=args.optimizer,
+            num_classes=args.num_classes,
+            input_size=224,
+            feature_extract=False,
+            use_pretrained=args.pretrained,
+        )
+        return model, model.input_size
+
+    else:
+        model, input_size = choose_model(
+            args.model, args.num_classes, args.feature_extract, args.pretrained
+        )
+        return model, input_size
+
+
 def parse_args():
     """Parse input arguments.
     Returns:
@@ -40,6 +60,15 @@ def parse_args():
         help="choice of baseline strategy",
         default="classic",
         type=str,
+    )
+
+    parser.add_argument(
+        "-l",
+        "--lightning",
+        dest="lightning",
+        help="use pytorch-lightning [bool]",
+        default=True,
+        type=bool,
     )
 
     parser.add_argument(
@@ -86,6 +115,33 @@ def parse_args():
         help="choice of optimizer [string]",
         default="adam",
         type=str,
+    )
+
+    parser.add_argument(
+        "-c",
+        "--num_classes",
+        dest="num_classes",
+        help="set the number of target output classes",
+        default=3,
+        type=int,
+    )
+
+    parser.add_argument(
+        "-f",
+        "--feature_extract",
+        dest="feature_extract",
+        help="#TODO",
+        default=False,
+        type=bool,
+    )
+
+    parser.add_argument(
+        "-p",
+        "--pretrained",
+        dest="pretrained",
+        help="choice of pretrained model or not [bool]",
+        default=True,
+        type=bool,
     )
 
     args = parser.parse_args()

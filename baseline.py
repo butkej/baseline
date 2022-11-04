@@ -42,7 +42,9 @@ def classic(args):
     # pass model, dataloader/set and epochs, performs training/validation loops
     train_dl = torch.utils.DataLoader()
     val_dl = torch.utils.DataLoader()
-    trainer = pl.Trainer(accelerator="gpu", devices=args.num_gpus)
+    trainer = pl.Trainer(
+        max_epochs=args.epochs, accelerator="gpu", devices=args.num_gpus
+    )
     trainer.fit(model, train_dl, val_dl)
 
 
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     print(args)
 
     # Model initiliazation
-    # model, input_size = utils.choose_model(args.model)
+    model, input_size = utils.lightning_mode(args)
 
     loader_kwargs = {}
     if torch.cuda.is_available():

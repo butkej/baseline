@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
+from torchvision import models
 import pytorch_lightning as pl
 
 #######
@@ -493,7 +494,7 @@ class ClassicBaseline(pl.LightningModule):
         num_classes=3,
         input_size=224,
         feature_extract=False,
-        use_pretrained=False,
+        use_pretrained=True,
     ):
         super().__init__()
 
@@ -527,12 +528,14 @@ class ClassicBaseline(pl.LightningModule):
         y_hat = self.forward(x)
         loss = self.criterion(y_hat, y)
         self.log("train_loss", loss)
+        return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
         val_loss = self.criterion(y_hat, y)
         self.log("val_loss", val_loss)
+        return val_loss
 
     def configure_optimizers(self):
         if self.optimizer == "adam":
