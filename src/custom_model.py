@@ -523,19 +523,25 @@ class ClassicBaseline(pl.LightningModule):
             representations = self.feature_extractor(x).flatten(1)
         x = self.classifier(representations)
 
+    def _calculate_loss(self, batch, mode="train"):
+        imgs, labels = batch
+        preds = self.model(imgs)
+        loss = F.cross_entropy(preds, labels)
+        acc = (preds.argmax(dim=-1) == labels).float().mean()
+
+        self.log("%s_loss" % mode, loss, prog_bar=True)
+        self.log("%s_acc" % mode, acc, prog_bar=True)
+        return loss
+
     def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self.forward(x)
-        loss = self.criterion(y_hat, y)
-        self.log("train_loss", loss)
+        loss = self._calculate_loss(batch, mode="train")
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self.forward(x)
-        val_loss = self.criterion(y_hat, y)
-        self.log("val_loss", val_loss)
-        return val_loss
+        self._calculate_loss(batch, mode="val")
+
+    def test_step(self, batch, batch_idx):
+        self._calculate_loss(batch, mode="test")
 
     def configure_optimizers(self):
         if self.optimizer == "adam":

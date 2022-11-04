@@ -43,7 +43,11 @@ def classic(args):
     train_dl = torch.utils.DataLoader()
     val_dl = torch.utils.DataLoader()
     trainer = pl.Trainer(
-        max_epochs=args.epochs, accelerator="gpu", devices=args.num_gpus
+        max_epochs=args.epochs,
+        accelerator="gpu",
+        devices=args.num_gpus,
+        default_root_dir=EXPERIMENT_DIR,
+        enable_progress_bar=True,
     )
     trainer.fit(model, train_dl, val_dl)
 
@@ -59,6 +63,8 @@ def vit(args):
 ######
 
 if __name__ == "__main__":
+    # Config
+    EXPERIMENT_DIR = "/home/butkej/experiments/"
     # Setup
     utils.seed_everything(3407)
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
