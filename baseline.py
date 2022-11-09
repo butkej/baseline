@@ -65,6 +65,13 @@ def vit(args):
 if __name__ == "__main__":
     # Config
     EXPERIMENT_DIR = "/home/butkej/experiments/"
+    DATA_DIR = "/ml/wsi/"
+    SLIDE_INFO_DIR = "slide_ID/"
+    PATCH_INFO_DIR = "csv_JMR/"
+    SUBTYPES = ["DLBCL", "FL", "Reactive"]
+    MAGNIFICATION = "40x"  # or "20x" or "10x"
+    # SUBTYPES = [['DLBCL', 'FL'],['AITL', 'ATLL'],['CHL'],['Reactive']]
+
     # Setup
     utils.seed_everything(3407)
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,13 +85,30 @@ if __name__ == "__main__":
     # Model initiliazation
     model, input_size = utils.lightning_mode(args)
 
+    # optim = utils.choose_optimizer(args.optimizer, model)
+    print("\nSuccessfully build and compiled the chosen model!")
+
+    # Data loading
     loader_kwargs = {}
     if torch.cuda.is_available():
         loader_kwargs = {"num_workers": 4, "pin_memory": True}
 
-    # optim = utils.choose_optimizer(args.optimizer, model)
-    print("\nSuccessfully build and compiled the chosen model!")
+    transform = torchvision.transforms.Compose(
+        [torchvision.transforms.Resize((224, 224)), torchvision.transforms.ToTensor()]
+    )
 
+    slides = dataset.load_data_paths(
+        subtypes=SUBTYPES, path_to_slide_info=SLIDE_INFO_DIR
+    )  # slides is list of all slides and their labels
+
+    X, y = [], []
+    for wsi, label in slides:
+        wsi_info = dataset.get_wsi_info(wsi, label, number_of_patches=1000)
+        patches, label = dataset.patch_wsi(
+            wsi_info, transform, magnification=MAGNIFICATION
+        )
+        X.append(patches)
+        y.append(label)
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + args.folds + " folds.")
     k_fold_cross_val(X, y, args, model, optim)
