@@ -74,6 +74,7 @@ def vit(args):
 ######
 
 if __name__ == "__main__":
+
     # Config
     EXPERIMENT_DIR = "/home/butkej/experiments/"
     DATA_DIR = "/ml/wsi/"
@@ -108,18 +109,18 @@ if __name__ == "__main__":
         [torchvision.transforms.Resize((224, 224)), torchvision.transforms.ToTensor()]
     )
 
-    slides = dataset.load_data_paths(
+    paths, labels = dataset.load_data_paths(
         subtypes=SUBTYPES, path_to_slide_info=SLIDE_INFO_DIR
     )  # slides is list of all slides and their labels
 
     X, y = [], []
-    for wsi, label in slides:
-        wsi_info = dataset.get_wsi_info(wsi, label, number_of_patches=1000)
+    for slide, label in zip(paths, labels):
+        wsi_info = dataset.get_wsi_info(slide, label, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR)
         patches, label = dataset.patch_wsi(
-            wsi_info, transform, magnification=MAGNIFICATION
+            wsi_info, transform, path_to_data=DATA_DIR, magnification=MAGNIFICATION
         )
         X.append(patches)
         y.append(label)
     # Run
-    print("\nStart of K-FOLD CROSSVALIDATION with " + args.folds + " folds.")
+    print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
     k_fold_cross_val(X, y, args, model, optim)

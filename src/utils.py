@@ -1,8 +1,11 @@
 import os
+import argparse
 import random
 import numpy as np
 import torch
 from torchvision import models
+
+from src import custom_model
 
 # Functions & Classes
 def seed_everything(seed: int = 3407) -> None:
@@ -105,6 +108,15 @@ def parse_args():
         dest="num_gpus",
         help="choice of gpu amount [integer]",
         default=1,
+        type=int,
+    )
+
+    parser.add_argument(
+        "-bs",
+        "--batch_size",
+        dest="batch_size",
+        help="choice of batch size [integer]",
+        default=32,
         type=int,
     )
 

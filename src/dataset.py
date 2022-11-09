@@ -21,48 +21,48 @@ def load_data_paths(subtypes: list, path_to_slide_info: str):
             labels.append(label)
         label += 1
 
-    return [data, labels]
+    return data, labels
 
 
-def get_wsi_info(wsi, label: int, number_of_patches: int = 1000):
+def get_wsi_info(wsi, label: int, number_of_patches: int, patch_info_path):
     slideID = wsi
 
     positions = np.loadtxt(
-        f"{PATCH_INFO_DIR}/{slideID}.csv", delimiter=",", dtype="int"
+        f"{patch_info_path}/{slideID}.csv", delimiter=",", dtype="int"
     )  # Load patch (40x) locations
     random.shuffle(positions)  # shuffle patches order of 1 wsi
     if positions.shape[0] > number_of_patches:
-        patches = pos[0:number_of_patches, :]
+        patches = positions[0:number_of_patches, :]
     else:
         patches = positions
 
     return [patches, slideID, label]
 
 
-def patch_wsi(wsi_info, transform, magnification: str = "40x"):
+def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"):
     patch_size = 224
 
     patch_amount = wsi_info[0]
     slide_ID = wsi_info[1]
     label = wsi_info[2]
 
-    svs = openslide.OpenSlide(f"{DATA_DIR}/{slide_ID}")  # Load 1 wsi
+    svs = openslide.OpenSlide(f"{path_to_data}/{slide_ID}.svs")  # Load 1 wsi
     patches = torch.empty(
         len(patch_amount), 3, patch_size, patch_size, dtype=torch.float
     )
 
     for i, pos in enumerate(patch_amount):
-        if self.mag == "40x":  # get patch(224 x 224)
+        if magnification == "40x":  # get patch(224 x 224)
             img = svs.read_region(
                 (pos[0], pos[1]), 0, (patch_size, patch_size)
             ).convert("RGB")
-        elif self.mag == "20x":  # get patch(448 x 448)
+        elif magnification == "20x":  # get patch(448 x 448)
             img = svs.read_region(
                 (pos[0] - (int(patch_size / 2)), pos[1] - (int(patch_size / 2))),
                 0,
                 (patch_size * 2, patch_size * 2),
             ).convert("RGB")
-        elif self.mag == "10x":  # get patch(224 x 224)
+        elif magnification == "10x":  # get patch(224 x 224)
             img = svs.read_region(
                 (
                     pos[0] - (int(patch_size * 3 / 2)),
@@ -71,7 +71,7 @@ def patch_wsi(wsi_info, transform, magnification: str = "40x"):
                 1,
                 (patch_size, patch_size),
             ).convert("RGB")
-        elif self.mag == "5x":  # get patch(448 x 448)
+        elif magnification == "5x":  # get patch(448 x 448)
             img = svs.read_region(
                 (
                     pos[0] - (int(patch_size * 7 / 2)),
