@@ -22,12 +22,19 @@ def k_fold_cross_val(X, y, args, model, optim, k: int = 5):
     KF.get_n_splits()
 
     fold = 1
-    for train_index, val_index in KF.split(slideIDs, labels):
+    for train_index, val_index in KF.split(X, y):
 
         print("FOLD Nr. " + str(fold))
         print("Start of training for " + str(args.epochs) + " epochs.")
+        print("TRAIN:", train_index, "VAL:", val_index)
+        X_train, X_val = X[train_index], X[val_index]
+        y_train, y_val = y[train_index], y[val_index]
+
+        train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
+        val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
+
         if args.baseline == "classic":
-            pass
+            classic(args, train_dataset, val_dataset)
         elif args.baseline == "clam":
             pass
         elif args.baseline == "vit":
@@ -40,8 +47,12 @@ def k_fold_cross_val(X, y, args, model, optim, k: int = 5):
 
 def classic(args):
     # pass model, dataloader/set and epochs, performs training/validation loops
-    train_dl = torch.utils.DataLoader()
-    val_dl = torch.utils.DataLoader()
+    train_dl = torch.utils.DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=True, **loader_kwargs
+    )
+    val_dl = torch.utils.DataLoader(
+        val_dataset, batch_size=args.batch_size, shuffle=False, **loader_kwargs
+    )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         accelerator="gpu",

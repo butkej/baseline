@@ -86,6 +86,22 @@ def patch_wsi(wsi_info, transform, magnification: str = "40x"):
     return patches, label
 
 
+def convert_to_tile_dataset(wsis, labels):
+    """Convert data and label pairs into combined format
+    Inputs:
+        a list of data/bags and a list of (bag)-labels
+    Outputs:
+        Returns a dataset (list) containing (stacked tiled instance data, bag label)
+    """
+    dataset = []
+
+    for index, (wsi, wsi_label) in enumerate(zip(wsis, labels)):
+
+        dataset.append((wsi, np.tile(wsi_label, reps=len(wsi))))
+
+    return dataset
+
+
 class PatchDataset(torch.utils.data.Dataset):
     def __init__(
         self, dataset, wsi_path: str, magnification: str = "40x", transform=None
