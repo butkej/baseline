@@ -14,7 +14,7 @@ from src import utils, custom_model, dataset
 # Functions & Classes
 
 
-def k_fold_cross_val(X, y, args, model, optim, k: int = 5):
+def k_fold_cross_val(X, y, args, model, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
     KF = StratifiedKFold(n_splits=k, shuffle=True)
@@ -22,13 +22,13 @@ def k_fold_cross_val(X, y, args, model, optim, k: int = 5):
     KF.get_n_splits()
 
     fold = 1
-    for train_index, val_index in KF.split(X, y):
+    for train_index, val_index in KF.split(np.zeros(len(X)), y):
 
         print("FOLD Nr. " + str(fold))
         print("Start of training for " + str(args.epochs) + " epochs.")
         print("TRAIN:", train_index, "VAL:", val_index)
-        X_train, X_val = X[train_index], X[val_index]
-        y_train, y_val = y[train_index], y[val_index]
+        X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
+        y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
 
         train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
         val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
@@ -45,13 +45,13 @@ def k_fold_cross_val(X, y, args, model, optim, k: int = 5):
         fold += 1
 
 
-def classic(args):
+def classic(args, train_ds, val_ds):
     # pass model, dataloader/set and epochs, performs training/validation loops
-    train_dl = torch.utils.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True, **loader_kwargs
+    train_dl = torch.utils.data.DataLoader(
+        train_ds, batch_size=args.batch_size, shuffle=True, **loader_kwargs
     )
-    val_dl = torch.utils.DataLoader(
-        val_dataset, batch_size=args.batch_size, shuffle=False, **loader_kwargs
+    val_dl = torch.utils.data.DataLoader(
+        val_ds, batch_size=args.batch_size, shuffle=False, **loader_kwargs
     )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
@@ -123,4 +123,4 @@ if __name__ == "__main__":
         y.append(label)
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
-    k_fold_cross_val(X, y, args, model, optim)
+    k_fold_cross_val(X, y, args, model)

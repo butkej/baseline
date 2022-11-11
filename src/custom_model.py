@@ -525,7 +525,7 @@ class ClassicBaseline(pl.LightningModule):
 
     def _calculate_loss(self, batch, mode="train"):
         imgs, labels = batch
-        preds = self.model(imgs)
+        preds = self.forward(imgs)
         loss = F.cross_entropy(preds, labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 
@@ -546,7 +546,7 @@ class ClassicBaseline(pl.LightningModule):
     def configure_optimizers(self):
         if self.optimizer == "adam":
             optim = torch.optim.Adam(
-                self.parameters,
+                self.parameters(),
                 lr=0.001,
                 betas=(0.9, 0.999),
                 eps=1e-08,
@@ -555,11 +555,11 @@ class ClassicBaseline(pl.LightningModule):
             )
         elif self.optimizer == "adadelta":
             optim = torch.optim.Adadelta(
-                self.parameters, lr=1.0, rho=0.9, eps=1e-06, weight_decay=0
+                self.parameters(), lr=1.0, rho=0.9, eps=1e-06, weight_decay=0
             )
         elif self.optimizer == "momentum":
             optim = torch.optim.SGD(
-                self.parameters,
+                self.parameters(),
                 lr=0.01,
                 momentum=0.9,
                 dampening=0,
