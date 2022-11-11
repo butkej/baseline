@@ -80,13 +80,13 @@ def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"
                 1,
                 (patch_size * 2, patch_size * 2),
             ).convert("RGB")
-        img = transform(img)  # resize patch to (224 x 224)
+        img = transform(img)
         patches[i] = img
 
     return patches, label
 
 
-def convert_to_tile_dataset(wsis, labels):
+def convert_to_tile_dataset(wsis, labels, transform=None):
     """Convert data and label pairs into combined format
     Inputs:
         a list of data/bags and a list of (bag)-labels
@@ -94,10 +94,17 @@ def convert_to_tile_dataset(wsis, labels):
         Returns a dataset (list) containing (stacked tiled instance data, bag label)
     """
     dataset = []
+    tmp_x = []
+    tmp_y = []
 
     for index, (wsi, wsi_label) in enumerate(zip(wsis, labels)):
+        wsi_label = np.tile(wsi_label, reps=len(wsi))
+        tmp_x.append(wsi)
+        tmp_y.append(wsi_label)
+    tmp_x = torch.cat(tmp_x, dim=0)
 
-        dataset.append((wsi, np.tile(wsi_label, reps=len(wsi))))
+    dataset.append((tmp_x.squeeze(), tmp_y))
+    del tmp_x, tmp_y, wsis, labels
 
     return dataset
 

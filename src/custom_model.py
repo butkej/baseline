@@ -525,7 +525,7 @@ class ClassicBaseline(pl.LightningModule):
 
     def _calculate_loss(self, batch, mode="train"):
         imgs, labels = batch
-        preds = self.forward(imgs)
+        preds = self.forward(imgs.squeeze())
         loss = F.cross_entropy(preds, labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 

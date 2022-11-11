@@ -14,7 +14,7 @@ from src import utils, custom_model, dataset
 # Functions & Classes
 
 
-def k_fold_cross_val(X, y, args, model, k: int = 5):
+def k_fold_cross_val(X, y, args, model, transform,  k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
     KF = StratifiedKFold(n_splits=k, shuffle=True)
@@ -30,10 +30,10 @@ def k_fold_cross_val(X, y, args, model, k: int = 5):
         X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
         y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
 
-        train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
-        val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
-
         if args.baseline == "classic":
+            train_dataset = dataset.convert_to_tile_dataset(X_train, y_train, transform)
+            val_dataset = dataset.convert_to_tile_dataset(X_val, y_val, transform)
+
             classic(args, train_dataset, val_dataset)
         elif args.baseline == "clam":
             pass
@@ -76,7 +76,7 @@ def vit(args):
 if __name__ == "__main__":
 
     # Config
-    EXPERIMENT_DIR = "/home/butkej/experiments/"
+    EXPERIMENT_DIR = "/home/butkej/work/experiments/"
     DATA_DIR = "/ml/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
     PATCH_INFO_DIR = "csv_JMR/"
@@ -123,4 +123,4 @@ if __name__ == "__main__":
         y.append(label)
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
-    k_fold_cross_val(X, y, args, model)
+    k_fold_cross_val(X, y, args, model, transform)
