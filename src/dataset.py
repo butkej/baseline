@@ -3,6 +3,17 @@ import numpy as np
 import torch
 import openslide
 
+def one_hot_encode_labels(labels):
+    """Takes integer labels with values [0-9] and converts them to one hot encoded labels.
+    Uses sklearn instead of keras!
+    """
+    from sklearn.preprocessing import MultiLabelBinarizer
+    mlb = MultiLabelBinarizer()
+    labels_transformed = mlb.fit_transform(labels)
+    print("Original classes are : " + str(mlb.classes_))
+    print("One-hot-encoded classes are : " + str(np.unique(labels_transformed, axis=0)))
+
+    return labels_transformed
 
 def load_data_paths(subtypes: list, path_to_slide_info: str):
     """loads all wsi slides at a given location dependent on their datapaths and a list of disease subtypes.
@@ -101,9 +112,13 @@ def convert_to_tile_dataset(wsis, labels, transform=None):
         wsi_label = np.tile(wsi_label, reps=len(wsi))
         tmp_x.append(wsi)
         tmp_y.append(wsi_label)
-    tmp_x = torch.cat(tmp_x, dim=0)
 
-    dataset.append((tmp_x.squeeze(), tmp_y))
+    tmp_x = torch.cat(tmp_x, dim=0)
+    tmp_y = np.hstack(tmp_y)
+    #tmp_x = torch.unbind(tmp_x, dim=0)
+    tmp_x = torch.chunk(tmp_x, chunks=len(tmp_x),dim=0)
+
+    dataset.append((tmp_x, torch.unbind(torch.as_tensor(tmp_y), dim=0)))
     del tmp_x, tmp_y, wsis, labels
 
     return dataset

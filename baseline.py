@@ -77,7 +77,8 @@ if __name__ == "__main__":
 
     # Config
     EXPERIMENT_DIR = "/home/butkej/work/experiments/"
-    DATA_DIR = "/ml/wsi/"
+    #DATA_DIR = "/ml/wsi/"
+    DATA_DIR = "/mnt/crest/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
     PATCH_INFO_DIR = "csv_JMR/"
     SUBTYPES = ["DLBCL", "FL", "Reactive"]
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     # Data loading
     loader_kwargs = {}
     if torch.cuda.is_available():
-        loader_kwargs = {"num_workers": 4, "pin_memory": True}
+        loader_kwargs = {"num_workers": 0, "pin_memory": True}
 
     transform = torchvision.transforms.Compose(
         [torchvision.transforms.Resize((224, 224)), torchvision.transforms.ToTensor()]
@@ -114,13 +115,18 @@ if __name__ == "__main__":
     )  # slides is list of all slides and their labels
 
     X, y = [], []
-    for slide, label in zip(paths, labels):
-        wsi_info = dataset.get_wsi_info(slide, label, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR)
+    for slide, target in zip(paths, labels):
+        wsi_info = dataset.get_wsi_info(slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR)
         patches, label = dataset.patch_wsi(
             wsi_info, transform, path_to_data=DATA_DIR, magnification=MAGNIFICATION
         )
         X.append(patches)
         y.append(label)
+
+    #y = np.asarray(y)
+    #if len(np.unique(y)) > 2:
+    #    y = dataset.one_hot_encode_labels(y)
+
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
     k_fold_cross_val(X, y, args, model, transform)
