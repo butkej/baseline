@@ -14,7 +14,7 @@ from src import utils, custom_model, dataset
 # Functions & Classes
 
 
-def k_fold_cross_val(X, y, args, model, transform,  k: int = 5):
+def k_fold_cross_val(X, y, args, model, transform, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
     KF = StratifiedKFold(n_splits=k, shuffle=True)
@@ -31,8 +31,8 @@ def k_fold_cross_val(X, y, args, model, transform,  k: int = 5):
         y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
 
         if args.baseline == "classic":
-            train_dataset = dataset.convert_to_tile_dataset(X_train, y_train, transform)
-            val_dataset = dataset.convert_to_tile_dataset(X_val, y_val, transform)
+            train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
+            val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             classic(args, train_dataset, val_dataset)
         elif args.baseline == "clam":
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     # Config
     EXPERIMENT_DIR = "/home/butkej/work/experiments/"
-    #DATA_DIR = "/ml/wsi/"
+    # DATA_DIR = "/ml/wsi/"
     DATA_DIR = "/mnt/crest/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
     PATCH_INFO_DIR = "csv_JMR/"
@@ -114,17 +114,22 @@ if __name__ == "__main__":
         subtypes=SUBTYPES, path_to_slide_info=SLIDE_INFO_DIR
     )  # slides is list of all slides and their labels
 
-    X, y = [], []
-    for slide, target in zip(paths, labels):
-        wsi_info = dataset.get_wsi_info(slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR)
-        patches, label = dataset.patch_wsi(
-            wsi_info, transform, path_to_data=DATA_DIR, magnification=MAGNIFICATION
-        )
-        X.append(patches)
-        y.append(label)
+    if args.baseline != "clam":
+        X, y = [], []
+        for slide, target in zip(paths, labels):
+            wsi_info = dataset.get_wsi_info(
+                slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR
+            )
+            patches, label = dataset.patch_wsi(
+                args,
+                wsi_info,
+                transform,
+                path_to_data=DATA_DIR,
+                magnification=MAGNIFICATION,
+            )
 
-    #y = np.asarray(y)
-    #if len(np.unique(y)) > 2:
+    # y = np.asarray(y)
+    # if len(np.unique(y)) > 2:
     #    y = dataset.one_hot_encode_labels(y)
 
     # Run

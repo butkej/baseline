@@ -3,17 +3,20 @@ import numpy as np
 import torch
 import openslide
 
+
 def one_hot_encode_labels(labels):
     """Takes integer labels with values [0-9] and converts them to one hot encoded labels.
     Uses sklearn instead of keras!
     """
     from sklearn.preprocessing import MultiLabelBinarizer
+
     mlb = MultiLabelBinarizer()
     labels_transformed = mlb.fit_transform(labels)
     print("Original classes are : " + str(mlb.classes_))
     print("One-hot-encoded classes are : " + str(np.unique(labels_transformed, axis=0)))
 
     return labels_transformed
+
 
 def load_data_paths(subtypes: list, path_to_slide_info: str):
     """loads all wsi slides at a given location dependent on their datapaths and a list of disease subtypes.
@@ -35,7 +38,7 @@ def load_data_paths(subtypes: list, path_to_slide_info: str):
     return data, labels
 
 
-def get_wsi_info(wsi, label: int, number_of_patches: int, patch_info_path):
+def get_wsi_info(wsi, label: int, number_of_patches: int, patch_info_path: str):
     slideID = wsi
 
     positions = np.loadtxt(
@@ -50,7 +53,7 @@ def get_wsi_info(wsi, label: int, number_of_patches: int, patch_info_path):
     return [patches, slideID, label]
 
 
-def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"):
+def patch_wsi(args, wsi_info, transform, path_to_data: str, magnification: str = "40x"):
     patch_size = 224
 
     patch_amount = wsi_info[0]
@@ -58,9 +61,15 @@ def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"
     label = wsi_info[2]
 
     svs = openslide.OpenSlide(f"{path_to_data}/{slide_ID}.svs")  # Load 1 wsi
-    patches = torch.empty(
-        len(patch_amount), 3, patch_size, patch_size, dtype=torch.float
-    )
+
+    if (
+        args.baseline == "clam"
+    ):  # perform wsi patching to make MIL-based bags with one label
+        patches = torch.empty(
+            len(patch_amount), 3, patch_size, patch_size, dtype=torch.float
+        )
+    else:
+        X, y = [], []
 
     for i, pos in enumerate(patch_amount):
         if magnification == "40x":  # get patch(224 x 224)
@@ -91,13 +100,21 @@ def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"
                 1,
                 (patch_size * 2, patch_size * 2),
             ).convert("RGB")
+
         img = transform(img)
-        patches[i] = img
+        if args.baseline == "clam":
+            patches[i] = img
+        else:
+            X.append(img)
+            y.append(label)
 
-    return patches, label
+    if args.baseline == "clam":
+        return patches, label
+    else:
+        return X, y
 
 
-def convert_to_tile_dataset(wsis, labels, transform=None):
+def convert_to_tile_dataset(wsis, labels):
     """Convert data and label pairs into combined format
     Inputs:
         a list of data/bags and a list of (bag)-labels
@@ -105,21 +122,9 @@ def convert_to_tile_dataset(wsis, labels, transform=None):
         Returns a dataset (list) containing (stacked tiled instance data, bag label)
     """
     dataset = []
-    tmp_x = []
-    tmp_y = []
 
     for index, (wsi, wsi_label) in enumerate(zip(wsis, labels)):
-        wsi_label = np.tile(wsi_label, reps=len(wsi))
-        tmp_x.append(wsi)
-        tmp_y.append(wsi_label)
-
-    tmp_x = torch.cat(tmp_x, dim=0)
-    tmp_y = np.hstack(tmp_y)
-    #tmp_x = torch.unbind(tmp_x, dim=0)
-    tmp_x = torch.chunk(tmp_x, chunks=len(tmp_x),dim=0)
-
-    dataset.append((tmp_x, torch.unbind(torch.as_tensor(tmp_y), dim=0)))
-    del tmp_x, tmp_y, wsis, labels
+        dataset.append((wsi, wsi_label))
 
     return dataset
 
