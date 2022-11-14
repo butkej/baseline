@@ -53,7 +53,7 @@ def get_wsi_info(wsi, label: int, number_of_patches: int, patch_info_path: str):
     return [patches, slideID, label]
 
 
-def patch_wsi(args, wsi_info, transform, path_to_data: str, magnification: str = "40x"):
+def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"):
     patch_size = 224
 
     patch_amount = wsi_info[0]
@@ -102,16 +102,9 @@ def patch_wsi(args, wsi_info, transform, path_to_data: str, magnification: str =
             ).convert("RGB")
 
         img = transform(img)
-        if args.baseline == "clam":
-            patches[i] = img
-        else:
-            X.append(img)
-            y.append(label)
+        patches[i] = img
 
-    if args.baseline == "clam":
         return patches, label
-    else:
-        return np.stack(X), y
 
 
 def convert_to_tile_dataset(wsis, labels):
@@ -122,8 +115,15 @@ def convert_to_tile_dataset(wsis, labels):
         Returns a dataset (list) containing (stacked tiled instance data, bag label)
     """
     dataset = []
+    tmp_y = []
+    for wsi, wsi_label in zip(wsis, labels):
+        number_of_patches = wsi.shape[0]
+        tmp_y.append(label * number_of_patches)
+    tmp_x = np.concatenate(wsis)
+    tmp_y = np.concatenate(tmp_y)
+    assert tmp_x.shape[0] == len(y)
 
-    for index, (wsi, wsi_label) in enumerate(zip(wsis, labels)):
+    for index, (wsi, wsi_label) in enumerate(zip(tmp_x, tmp_y)):
         dataset.append((wsi, wsi_label))
 
     return dataset

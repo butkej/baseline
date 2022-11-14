@@ -26,7 +26,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         print("FOLD Nr. " + str(fold))
 
-        # Model initiliazation
+        # Model initiliazation or reinit if fold > 1
         model, input_size = utils.lightning_mode(args)
 
         print("Start of training for " + str(args.epochs) + " epochs.")
@@ -120,28 +120,21 @@ if __name__ == "__main__":
         subtypes=SUBTYPES, path_to_slide_info=SLIDE_INFO_DIR
     )  # slides is list of all slides and their labels
 
-    if args.baseline != "clam":
-        X, y = [], []
-        for slide, target in zip(paths, labels):
-            wsi_info = dataset.get_wsi_info(
-                slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR
-            )
-            patches, label = dataset.patch_wsi(
-                args,
-                wsi_info,
-                transform,
-                path_to_data=DATA_DIR,
-                magnification=MAGNIFICATION,
-            )
-
-            X.append(patches)
-            y.append(label)
-        X = np.concatenate(X)
-        y = np.concatenate(y)
-        assert X.shape[0] == len(y)
-
-    else:  # for CLAM/MIL based models
-        pass  # TODO
+    X, y = [], []
+    for slide, target in zip(paths, labels):
+        wsi_info = dataset.get_wsi_info(
+            slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR
+        )
+        patches, label = dataset.patch_wsi(
+            args,
+            wsi_info,
+            transform,
+            path_to_data=DATA_DIR,
+            magnification=MAGNIFICATION,
+        )
+        X.append(patches)
+        y.append(label)
+    assert len(X) == len(y)
 
     # y = np.asarray(y)
     # if len(np.unique(y)) > 2:
