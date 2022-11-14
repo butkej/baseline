@@ -14,7 +14,7 @@ from src import utils, custom_model, dataset
 # Functions & Classes
 
 
-def k_fold_cross_val(X, y, args, model, transform, k: int = 5):
+def k_fold_cross_val(X, y, args, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
     KF = StratifiedKFold(n_splits=k, shuffle=True)
@@ -25,6 +25,10 @@ def k_fold_cross_val(X, y, args, model, transform, k: int = 5):
     for train_index, val_index in KF.split(np.zeros(len(X)), y):
 
         print("FOLD Nr. " + str(fold))
+
+        # Model initiliazation
+        model, input_size = utils.lightning_mode(args)
+        
         print("Start of training for " + str(args.epochs) + " epochs.")
         print("TRAIN:", train_index, "VAL:", val_index)
         X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
@@ -34,7 +38,7 @@ def k_fold_cross_val(X, y, args, model, transform, k: int = 5):
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
-            classic(args, train_dataset, val_dataset)
+            classic(args, model, train_dataset, val_dataset)
         elif args.baseline == "clam":
             pass
         elif args.baseline == "vit":
@@ -45,7 +49,7 @@ def k_fold_cross_val(X, y, args, model, transform, k: int = 5):
         fold += 1
 
 
-def classic(args, train_ds, val_ds):
+def classic(args, model, train_ds, val_ds):
     # pass model, dataloader/set and epochs, performs training/validation loops
     train_dl = torch.utils.data.DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True, **loader_kwargs
@@ -95,11 +99,6 @@ if __name__ == "__main__":
     print("Called with args:")
     print(args)
 
-    # Model initiliazation
-    model, input_size = utils.lightning_mode(args)
-
-    # optim = utils.choose_optimizer(args.optimizer, model)
-    print("\nSuccessfully build and compiled the chosen model!")
 
     # Data loading
     loader_kwargs = {}
@@ -132,10 +131,10 @@ if __name__ == "__main__":
             y.append(label)
         X = np.concatenate(X)
         y = np.concatenate(y)
-        print(X.shape)
-        print(X[0].shape)
-        print(y.shape)
-        print(y[0].shape)
+        assert X.shape[0] == len(y)
+
+    else: # for CLAM/MIL based models
+        pass # TODO
 
     # y = np.asarray(y)
     # if len(np.unique(y)) > 2:
@@ -143,4 +142,4 @@ if __name__ == "__main__":
 
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
-    k_fold_cross_val(X, y, args, model, transform)
+    k_fold_cross_val(X, y, args)
