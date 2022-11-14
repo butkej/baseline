@@ -17,7 +17,7 @@ from src import utils, custom_model, dataset
 def k_fold_cross_val(X, y, args, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
-    KF = StratifiedKFold(n_splits=k, shuffle=True)
+    KF = StratifiedKFold(n_splits=k, shuffle=False)
 
     KF.get_n_splits()
 
@@ -28,7 +28,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         # Model initiliazation
         model, input_size = utils.lightning_mode(args)
-        
+
         print("Start of training for " + str(args.epochs) + " epochs.")
         print("TRAIN:", train_index, "VAL:", val_index)
         X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
@@ -57,14 +57,22 @@ def classic(args, model, train_ds, val_ds):
     val_dl = torch.utils.data.DataLoader(
         val_ds, batch_size=args.batch_size, shuffle=False, **loader_kwargs
     )
+    early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
+        monitor="val_acc", min_delta=0.00, patience=3, verbose=True, mode="max"
+    )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         accelerator="gpu",
         devices=args.num_gpus,
         default_root_dir=EXPERIMENT_DIR,
         enable_progress_bar=True,
+        callbacks=[early_stop_callback],
     )
     trainer.fit(model, train_dl, val_dl)
+    # eval after full training fold
+    # model.eval()
+    # predict with the model
+    # y_hat = model(x)
 
 
 def clam(args):
@@ -80,7 +88,7 @@ def vit(args):
 if __name__ == "__main__":
 
     # Config
-    EXPERIMENT_DIR = "/home/butkej/work/experiments/"
+    EXPERIMENT_DIR = "/home/butkej/work/experiments/baseline-prototype"
     # DATA_DIR = "/ml/wsi/"
     DATA_DIR = "/mnt/crest/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
@@ -98,7 +106,6 @@ if __name__ == "__main__":
 
     print("Called with args:")
     print(args)
-
 
     # Data loading
     loader_kwargs = {}
@@ -126,15 +133,15 @@ if __name__ == "__main__":
                 path_to_data=DATA_DIR,
                 magnification=MAGNIFICATION,
             )
-            
+
             X.append(patches)
             y.append(label)
         X = np.concatenate(X)
         y = np.concatenate(y)
         assert X.shape[0] == len(y)
 
-    else: # for CLAM/MIL based models
-        pass # TODO
+    else:  # for CLAM/MIL based models
+        pass  # TODO
 
     # y = np.asarray(y)
     # if len(np.unique(y)) > 2:
