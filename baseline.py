@@ -14,6 +14,20 @@ from src import utils, custom_model, dataset
 # Functions & Classes
 
 
+def eval_patientwise(model, data, labels):
+    model.eval()
+    acc = 0
+    for wsi, wsi_label in zip(data, labels):
+        preds = []
+        for img in data:
+            pred = model(img)
+            preds.append(pred.argmax(dim=-1))
+        if np.round(np.mean(preds)) == wsi_label:
+            acc += 1
+    print("eval accuracy patient wise is:")
+    print(str(acc / len(labels)))
+
+
 def k_fold_cross_val(X, y, args, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
@@ -39,6 +53,8 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             classic(args, model, train_dataset, val_dataset)
+            eval_patientwise(model, X_val, y_val)
+
         elif args.baseline == "clam":
             pass
         elif args.baseline == "vit":
@@ -69,10 +85,6 @@ def classic(args, model, train_ds, val_ds):
         callbacks=[early_stop_callback],
     )
     trainer.fit(model, train_dl, val_dl)
-    # eval after full training fold
-    # model.eval()
-    # predict with the model
-    # y_hat = model(x)
 
 
 def clam(args):
