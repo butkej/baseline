@@ -111,7 +111,7 @@ def patch_wsi(args, wsi_info, transform, path_to_data: str, magnification: str =
     if args.baseline == "clam":
         return patches, label
     else:
-        return X, y
+        return np.stack(X), y
 
 
 def convert_to_tile_dataset(wsis, labels):

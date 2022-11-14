@@ -127,6 +127,15 @@ if __name__ == "__main__":
                 path_to_data=DATA_DIR,
                 magnification=MAGNIFICATION,
             )
+            
+            X.append(patches)
+            y.append(label)
+        X = np.concatenate(X)
+        y = np.concatenate(y)
+        print(X.shape)
+        print(X[0].shape)
+        print(y.shape)
+        print(y[0].shape)
 
     # y = np.asarray(y)
     # if len(np.unique(y)) > 2:
