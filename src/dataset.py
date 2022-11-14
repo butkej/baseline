@@ -62,14 +62,9 @@ def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"
 
     svs = openslide.OpenSlide(f"{path_to_data}/{slide_ID}.svs")  # Load 1 wsi
 
-    if (
-        args.baseline == "clam"
-    ):  # perform wsi patching to make MIL-based bags with one label
-        patches = torch.empty(
-            len(patch_amount), 3, patch_size, patch_size, dtype=torch.float
-        )
-    else:
-        X, y = [], []
+    patches = torch.empty(
+        len(patch_amount), 3, patch_size, patch_size, dtype=torch.float
+    )
 
     for i, pos in enumerate(patch_amount):
         if magnification == "40x":  # get patch(224 x 224)
@@ -118,10 +113,10 @@ def convert_to_tile_dataset(wsis, labels):
     tmp_y = []
     for wsi, wsi_label in zip(wsis, labels):
         number_of_patches = wsi.shape[0]
-        tmp_y.append(label * number_of_patches)
+        tmp_y.append(np.tile(wsi_label,reps=number_of_patches).tolist())
     tmp_x = np.concatenate(wsis)
     tmp_y = np.concatenate(tmp_y)
-    assert tmp_x.shape[0] == len(y)
+    assert tmp_x.shape[0] == len(tmp_y)
 
     for index, (wsi, wsi_label) in enumerate(zip(tmp_x, tmp_y)):
         dataset.append((wsi, wsi_label))

@@ -126,7 +126,6 @@ if __name__ == "__main__":
             slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR
         )
         patches, label = dataset.patch_wsi(
-            args,
             wsi_info,
             transform,
             path_to_data=DATA_DIR,
