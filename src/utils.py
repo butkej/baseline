@@ -107,7 +107,7 @@ def parse_args():
         "--gpu",
         dest="num_gpus",
         help="choice of gpu amount [integer]",
-        default=1,
+        default=2,
         type=int,
     )
 

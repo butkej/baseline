@@ -19,9 +19,9 @@ def eval_patientwise(model, data, labels):
     acc = 0
     for wsi, wsi_label in zip(data, labels):
         preds = []
-        for img in data:
-            pred = model(img)
-            preds.append(pred.argmax(dim=-1))
+        for img in wsi:
+            pred = model(img.unsqueeze(dim=0))
+            preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
     print("eval accuracy patient wise is:")
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     X, y = [], []
     for slide, target in zip(paths, labels):
         wsi_info = dataset.get_wsi_info(
-            slide, target, number_of_patches=1000, patch_info_path=PATCH_INFO_DIR
+            slide, target, number_of_patches=500, patch_info_path=PATCH_INFO_DIR
         )
         patches, label = dataset.patch_wsi(
             wsi_info,
