@@ -8,6 +8,7 @@ import torchvision
 import pytorch_lightning as pl
 
 from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import roc_auc_score
 from src import utils, custom_model, dataset
 
 
@@ -17,15 +18,20 @@ from src import utils, custom_model, dataset
 def eval_patientwise(model, data, labels):
     model.eval()
     acc = 0
+    true_slide_labels = []
     for wsi, wsi_label in zip(data, labels):
         preds = []
+        true_slide_labels.append(wsi_label)
         for img in wsi:
             pred = model(img.unsqueeze(dim=0))
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
-    print("eval accuracy patient wise is:")
+    print("Eval Accuracy patient wise is:")
     print(str(acc / len(labels)))
+
+    print("Patientwise AUROC is:")
+    roc_auc_score(true_slide_labels, (preds / len(true_slide_labels)))
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
@@ -50,6 +56,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         if args.baseline == "classic":
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
+            del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             classic(args, model, train_dataset, val_dataset)
@@ -145,6 +152,7 @@ if __name__ == "__main__":
         )
         X.append(patches)
         y.append(label)
+    del patches, label
     assert len(X) == len(y)
 
     # y = np.asarray(y)
