@@ -507,7 +507,7 @@ class ClassicBaseline(pl.LightningModule):
         elif model_name == "resnet50-bottlenecked":
             backbone = Resnet50_baseline(pretrained=self.use_pretrained)
 
-        #set_parameter_requires_grad(backbone, feature_extract)
+        set_parameter_requires_grad(backbone, feature_extract)
         num_filters = backbone.fc.in_features
         layers = list(backbone.children())[:-1]
         self.feature_extractor = nn.Sequential(*layers)
@@ -527,14 +527,14 @@ class ClassicBaseline(pl.LightningModule):
     def _calculate_loss(self, batch, mode="train"):
         imgs, labels = batch
         imgs = torch.tensor(imgs)
-        #labels = F.one_hot(labels, num_classes=self.num_classes)
+        # labels = F.one_hot(labels, num_classes=self.num_classes)
         preds = self.forward(imgs)
 
-        loss = self.criterion(preds,labels)
+        loss = self.criterion(preds, labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 
         self.log("%s_loss" % mode, loss, prog_bar=True)
-        self.log("%s_acc" % mode, acc, prog_bar=True)
+        self.log("%s_accuracy" % mode, acc, prog_bar=True)
         return loss
 
     def training_step(self, batch, batch_idx):

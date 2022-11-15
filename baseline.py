@@ -19,11 +19,13 @@ def eval_patientwise(model, data, labels):
     model.eval()
     acc = 0
     true_slide_labels = []
+    y_probs = []
     for wsi, wsi_label in zip(data, labels):
         preds = []
         true_slide_labels.append(wsi_label)
         for img in wsi:
             pred = model(img.unsqueeze(dim=0))
+            y_probs.append(pred)
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
@@ -31,15 +33,15 @@ def eval_patientwise(model, data, labels):
     print(str(acc / len(labels)))
 
     print("Patientwise AUROC is:")
-    roc_auc_score(true_slide_labels, (preds / len(true_slide_labels)))
+    roc_auc_score(true_slide_labels, (np.asarray(y_probs) / len(true_slide_labels)))
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
-    KF = StratifiedKFold(n_splits=k, shuffle=False)
+    KF = StratifiedKFold(n_splits=k, shuffle=True)
 
-    KF.get_n_splits()
+    print(KF.get_n_splits())
 
     fold = 1
     for train_index, val_index in KF.split(np.zeros(len(X)), y):
@@ -81,7 +83,7 @@ def classic(args, model, train_ds, val_ds):
         val_ds, batch_size=args.batch_size, shuffle=False, **loader_kwargs
     )
     early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
-        monitor="val_acc", min_delta=0.00, patience=3, verbose=True, mode="max"
+        monitor="val_accuracy", min_delta=0.001, patience=3, verbose=True, mode="max"
     )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
