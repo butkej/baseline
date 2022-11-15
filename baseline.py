@@ -48,15 +48,16 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         print("FOLD Nr. " + str(fold))
 
-        # Model initiliazation or reinit if fold > 1
-        model, input_size = utils.lightning_mode(args)
-
         print("Start of training for " + str(args.epochs) + " epochs.")
         print("TRAIN:", train_index, "VAL:", val_index)
         X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
         y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
 
         if args.baseline == "classic":
+            # Model initiliazation or reinit if fold > 1
+            model, input_size = utils.lightning_mode(args)
+            custom_model.freeze_model_layers(model, freeze_ratio=0.5)
+
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
             del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)

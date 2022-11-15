@@ -10,9 +10,27 @@ import pytorch_lightning as pl
 
 
 def set_parameter_requires_grad(model, feature_extracting):
+    """freeze the whole model
+    mainly used for feature extracting with a pretrained model backbone
+    """
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False
+
+
+def freeze_model_layers(model, freeze_ratio: float = 0.5):
+    """freeze a percentage of layers beginning from the start of the model"""
+    num_layers = 0
+    for name, child in model.named_children():
+        num_layers += 1
+    cut = int(freeze_ratio * num_layers)
+
+    cut_threshold = 0
+    for name, child in model.named_children():
+        cut_threshold += 1
+        if cut_threshold < cut:
+            for name_2, params in child.named_parameters():
+                params.requires_grad = False
 
 
 # ResNet
@@ -551,10 +569,10 @@ class ClassicBaseline(pl.LightningModule):
         if self.optimizer == "adam":
             optim = torch.optim.Adam(
                 self.parameters(),
-                lr=0.001,
+                lr=1e-5,
                 betas=(0.9, 0.999),
                 eps=1e-08,
-                weight_decay=0,
+                weight_decay=1e-5,
                 amsgrad=False,
             )
         elif self.optimizer == "adadelta":
