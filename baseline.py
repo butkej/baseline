@@ -25,7 +25,7 @@ def eval_patientwise(model, data, labels):
         true_slide_labels.append(wsi_label)
         for img in wsi:
             pred = model(img.unsqueeze(dim=0))
-            y_probs.append(pred)
+            y_probs.append(pred.detach().cpu().numpy())
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
