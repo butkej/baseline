@@ -265,23 +265,22 @@ def check_data(data, varname: str):
         print("dtype: {}".format(data.dtype))
     except:
         print("type: ".format(type(data)))
-    print("max: {}".format(data.max()))
-    print("min: {}".format(data.min()))
-    print("mean: {}".format(np.round(data.mean(), decimals=5)))
-    print("std: {}".format(np.round(data.std(), decimals=5)))
+    try:
+        print("max: {}".format(data.max()))
+        print("min: {}".format(data.min()))
+        print("mean: {}".format(np.round(data.mean(), decimals=5)))
+        print("std: {}".format(np.round(data.std(), decimals=5)))
+    except:
+        pass
     print("-----------")
     print("\n")
 
-    if data.dtype is list:
+    if type(data) is list:
         print("Length of list: {}".format(len(data)))
         try:
             print("Shape of first element: {}".format(data[0].shape))
         except:
             print("First element: {}".format(data[0]))
-    if np.unique(data) < 20:
-        print("Unique elements: {}".format(np.unique(data)))
-    else:
-        print("Array shape: {}".format(data.shape))
 
 
 def round_sum_to_one(x):
