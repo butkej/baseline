@@ -248,3 +248,44 @@ def choose_optimizer(selection, model):
         print("Error! Choosen optimizer or its parameters are unclear")
 
     return optim
+
+
+def namestr(obj, namespace):
+    return [name for name in namespace if namespace[name] is obj]
+
+
+def check_data(data):
+    """Prints characteristic image/array values that are often
+    useful to checkout.
+    """
+    print("\n")
+    print("Data Check for variable: {}".format(namestr(data, globals())))
+    print("-----------")
+    print("dtype: {}".format(data.dtype))
+    print("max: {}".format(data.max()))
+    print("min: {}".format(data.min()))
+    print("mean: {}".format(np.round(data.mean(), decimals=5)))
+    print("std: {}".format(np.round(data.std(), decimals=5)))
+    print("-----------")
+    print("\n")
+
+    if data.dtype is list:
+        print("Length of list: {}".format(len(data)))
+        try:
+            print("Shape of first element: {}".format(data[0].shape))
+        except:
+            print("First element: {}".format(data[0]))
+    if np.unique(data) < 20:
+        print("Unique elements: {}".format(np.unique(data)))
+    else:
+        print("Array shape: {}".format(data.shape))
+
+
+def round_sum_to_one(x):
+    """round each value in a list/array to a nearest acceptable value,
+    while still ensuring that the sum of values sums to 1"""
+    track_pos_low = 0
+    track_pos_high = 0
+    for pos, number in enumerate(x):
+        rounded_num = np.round(number, decimals=4)
+        # TODO

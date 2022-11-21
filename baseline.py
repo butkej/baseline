@@ -37,10 +37,13 @@ def eval_patientwise(model, data, labels):
     print("Eval Accuracy patient wise is:")
     print(str(acc / len(labels)))
 
+    print(true_slide_labels)
     print("Patientwise AUROC is:")
+    y_scores_slide = np.sum(y_probs_slide, axis=0) / len(true_slide_labels)
+    print(y_scores_slide)
     roc_auc_score(
         y_true=true_slide_labels,
-        y_score=(np.sum(y_probs_slide, axis=0) / len(true_slide_labels)),
+        y_score=y_scores_slide,
         multi_class="ovr",
     )
 
@@ -61,6 +64,9 @@ def k_fold_cross_val(X, y, args, k: int = 5):
         print("TRAIN:", train_index, "VAL:", val_index)
         X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
         y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
+
+        check_data(X_train)
+        check_data(y_train)
 
         if args.baseline == "classic":
             # Model initiliazation or reinit if fold > 1
@@ -165,8 +171,11 @@ if __name__ == "__main__":
             path_to_data=DATA_DIR,
             magnification=MAGNIFICATION,
         )
+
         X.append(patches)
         y.append(label)
+    utils.check_data(X)
+    utils.check_data(y)
     del patches, label
     assert len(X) == len(y)
 
