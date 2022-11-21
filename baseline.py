@@ -19,21 +19,28 @@ def eval_patientwise(model, data, labels):
     model.eval()
     acc = 0
     true_slide_labels = []
-    y_probs = []
+    y_probs_slide = []
+
     for wsi, wsi_label in zip(data, labels):
+        y_probs = []
         preds = []
         true_slide_labels.append(wsi_label)
         for img in wsi:
             pred = model(img.unsqueeze(dim=0))
             y_probs.append(pred.detach().cpu().numpy())
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
+
+        y_probs_slide.append(np.mean(y_probs, axis=0))
+
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
     print("Eval Accuracy patient wise is:")
     print(str(acc / len(labels)))
 
     print("Patientwise AUROC is:")
-    roc_auc_score(true_slide_labels, (np.asarray(y_probs) / len(true_slide_labels)))
+    roc_auc_score(
+        true_slide_labels, (np.sum(y_probs_slide, axis=0) / len(true_slide_labels))
+    )
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
