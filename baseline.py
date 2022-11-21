@@ -65,8 +65,8 @@ def k_fold_cross_val(X, y, args, k: int = 5):
         X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
         y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
 
-        check_data(X_train)
-        check_data(y_train)
+        utils.check_data(X_train, "X_train")
+        utils.check_data(y_train, "y_train")
 
         if args.baseline == "classic":
             # Model initiliazation or reinit if fold > 1
@@ -174,8 +174,8 @@ if __name__ == "__main__":
 
         X.append(patches)
         y.append(label)
-    utils.check_data(X)
-    utils.check_data(y)
+    utils.check_data(X, "X")
+    utils.check_data(y, "y")
     del patches, label
     assert len(X) == len(y)
 

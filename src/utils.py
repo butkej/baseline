@@ -254,14 +254,17 @@ def namestr(obj, namespace):
     return [name for name in namespace if namespace[name] is obj]
 
 
-def check_data(data):
+def check_data(data, varname: str):
     """Prints characteristic image/array values that are often
     useful to checkout.
     """
     print("\n")
-    print("Data Check for variable: {}".format(namestr(data, globals())))
+    print("Data Check for variable: {}".format(varname))
     print("-----------")
-    print("dtype: {}".format(data.dtype))
+    try:
+        print("dtype: {}".format(data.dtype))
+    except:
+        print("type: ".format(type(data)))
     print("max: {}".format(data.max()))
     print("min: {}".format(data.min()))
     print("mean: {}".format(np.round(data.mean(), decimals=5)))
