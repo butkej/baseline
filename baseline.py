@@ -39,7 +39,9 @@ def eval_patientwise(model, data, labels):
 
     print("Patientwise AUROC is:")
     roc_auc_score(
-        true_slide_labels, (np.sum(y_probs_slide, axis=0) / len(true_slide_labels))
+        y_true=true_slide_labels,
+        y_score=(np.sum(y_probs_slide, axis=0) / len(true_slide_labels)),
+        multi_class="ovr",
     )
 
 
@@ -142,7 +144,10 @@ if __name__ == "__main__":
         loader_kwargs = {"num_workers": 0, "pin_memory": True}
 
     transform = torchvision.transforms.Compose(
-        [torchvision.transforms.Resize((224, 224)), torchvision.transforms.ToTensor()]
+        [
+            torchvision.transforms.Resize((224, 224)),
+            torchvision.transforms.ToTensor(),
+        ]
     )
 
     paths, labels = dataset.load_data_paths(

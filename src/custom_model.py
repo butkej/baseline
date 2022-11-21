@@ -578,6 +578,7 @@ class VisionTransformer(nn.Module):
         super().__init__()
 
         self.patch_size = patch_size
+        self.input_size = patch_size[0]
 
         # Layers/Networks
         self.input_layer = nn.Linear(num_channels * (patch_size**2), embed_dim)

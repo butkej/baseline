@@ -26,7 +26,7 @@ def set_parameter_requires_grad(model, feature_extracting):
 
 def lightning_mode(args):
     """If lightning flag is set, load ResNet baseline from pytorch lightning"""
-    if args.lightning:
+    if args.lightning and not args.model == "vit":
         model = custom_model.ClassicBaseline(
             model_name=args.model,
             optimizer=args.optimizer,
@@ -35,6 +35,21 @@ def lightning_mode(args):
             feature_extract=False,
             use_pretrained=args.pretrained,
         )
+        return model, model.input_size
+
+    elif args.lightning and args.model == "vit":
+        model_kwargs = {
+            "embed_dim": 256,
+            "hidden_dim": 512,
+            "num_heads": 8,
+            "num_layers": 6,
+            "patch_size": 4,
+            "num_channels": 3,
+            "num_patches": 64,
+            "num_classes": 10,
+            "dropout": 0.2,
+        }
+        model, custom_model.ViT(**model_kwargs)
         return model, model.input_size
 
     else:
