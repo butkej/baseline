@@ -8,56 +8,6 @@ from torchvision import models
 from src import custom_model
 
 # Functions & Classes
-def seed_everything(seed: int = 3407) -> None:
-    """Function to pass a seed argument to all common packages for ML/DL
-    lol @ https://arxiv.org/pdf/2109.08203.pdf"""
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-
-def set_parameter_requires_grad(model, feature_extracting):
-    if feature_extracting:
-        for param in model.parameters():
-            param.requires_grad = False
-
-
-def lightning_mode(args):
-    """If lightning flag is set, load ResNet baseline from pytorch lightning"""
-    if args.lightning and not args.model == "vit":
-        model = custom_model.ClassicBaseline(
-            model_name=args.model,
-            optimizer_name=args.optimizer,
-            num_classes=args.num_classes,
-            input_size=224,
-            feature_extract=args.feature_extract,
-            use_pretrained=args.pretrained,
-        )
-        return model, model.input_size
-
-    elif args.lightning and args.model == "vit":
-        model_kwargs = {
-            "embed_dim": 768,
-            "hidden_dim": 512,
-            "num_heads": 8,
-            "num_layers": 6,
-            "patch_size": 16,
-            "num_channels": 3,
-            "num_patches": 64,
-            "num_classes": args.num_classes,
-            "dropout": 0.2,
-        }
-        model = custom_model.ViT(model_kwargs, lr=3e-4)
-        return model
-
-    else:
-        model, input_size = choose_model(
-            args.model, args.num_classes, args.feature_extract, args.pretrained
-        )
-        return model, input_size
-
 
 def parse_args():
     """Parse input arguments.
@@ -85,8 +35,8 @@ def parse_args():
         "--lightning",
         dest="lightning",
         help="use pytorch-lightning [bool]",
-        default=True,
-        type=bool,
+        default=False,
+        action='store_true',
     )
 
     parser.add_argument(
@@ -154,12 +104,12 @@ def parse_args():
     )
 
     parser.add_argument(
-        "-f",
+        "-fe",
         "--feature_extract",
         dest="feature_extract",
         help="",  # TODO
         default=False,
-        type=bool,
+        action="store_true",
     )
 
     parser.add_argument(
@@ -167,12 +117,73 @@ def parse_args():
         "--pretrained",
         dest="pretrained",
         help="choice of pretrained model or not [bool]",
-        default=True,
-        type=bool,
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "-f",
+        "--freeze",
+        dest="freeze",
+        help="choice of model layer freezin or not [bool]",
+        default=False,
+        action="store_true",
     )
 
     args = parser.parse_args()
     return args
+
+def seed_everything(seed: int = 3407) -> None:
+    """Function to pass a seed argument to all common packages for ML/DL
+    lol @ https://arxiv.org/pdf/2109.08203.pdf"""
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def set_parameter_requires_grad(model, feature_extracting):
+    if feature_extracting:
+        for param in model.parameters():
+            param.requires_grad = False
+
+
+def lightning_mode(args):
+    """If lightning flag is set, load ResNet baseline from pytorch lightning"""
+    if args.lightning and not args.model == "vit":
+        model = custom_model.ClassicBaseline(
+            model_name=args.model,
+            optimizer_name=args.optimizer,
+            num_classes=args.num_classes,
+            input_size=224,
+            feature_extract=args.feature_extract,
+            use_pretrained=args.pretrained,
+        )
+        return model, model.input_size
+
+    elif args.lightning and args.model == "vit":
+        model_kwargs = {
+            "embed_dim": 768,
+            "hidden_dim": 512,
+            "num_heads": 8,
+            "num_layers": 6,
+            "patch_size": 16,
+            "num_channels": 3,
+            "num_patches": 768,
+            "num_classes": args.num_classes,
+            "dropout": 0.2,
+        }
+        model = custom_model.ViT(model_kwargs, lr=3e-4)
+        return model
+
+    else:
+        model, input_size = choose_model(
+            args.model, args.num_classes, args.feature_extract, args.pretrained
+        )
+        return model, input_size
+
+
 
 
 def choose_model(

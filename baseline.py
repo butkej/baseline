@@ -16,7 +16,7 @@ from src import utils, custom_model, dataset
 
 
 def eval_patientwise(model, data, labels):
-    # model.eval()
+    model.eval()
     acc = 0
     true_slide_labels = []
     y_probs_slide = []
@@ -27,7 +27,8 @@ def eval_patientwise(model, data, labels):
         preds = []
         true_slide_labels.append(wsi_label)
         for img in wsi:
-            pred = model(img.unsqueeze(dim=0))
+            with torch.no_grad():
+                pred = model(img.unsqueeze(dim=0))
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
 
             softmaxxed = softmax(pred)
@@ -77,12 +78,15 @@ def k_fold_cross_val(X, y, args, k: int = 5):
         if args.baseline == "classic":
             # Model initilization or reinit if fold > 1
             model, input_size = utils.lightning_mode(args)
-            custom_model.freeze_model_layers(model, freeze_ratio=0.5)
+            if args.freeze:
+                custom_model.freeze_model_layers(model, freeze_ratio=0.5)
             if fold == 1: print(model)
 
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
             del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
+
+            model.train()
 
             classic(args, model, train_dataset, val_dataset)
             acc, auc = eval_patientwise(model, X_val, y_val)
@@ -101,8 +105,8 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
             classic(args, model, train_dataset, val_dataset)
             acc, auc = eval_patientwise(model, X_val, y_val)
-            results["Accuracy in Fold {}".format(fold)] = acc
-            results["ROC-AUC in Fold {}".format(fold)] = auc
+            results["Accuracy in Fold {}".format(fold)] = np.round(acc, 3)
+            results["ROC-AUC in Fold {}".format(fold)] = np.round(auc, 3)
 
         else:
             print("Error! Choosen baseline strategy is unclear")
