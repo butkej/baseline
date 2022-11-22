@@ -30,8 +30,8 @@ def load_data_paths(subtypes: list, path_to_slide_info: str):
             path_to_slide_info + f"{subtype}.txt", delimiter=",", dtype="str"
         ).tolist()
 
-        for slide in range(len(list_id[:100])):
-        #for slide in range(len(list_id)):
+        for slide in range(len(list_id[:5])):
+            # for slide in range(len(list_id)):
             data.append(list_id.pop(0))
             labels.append(label)
         label += 1
@@ -115,12 +115,16 @@ def convert_to_tile_dataset(wsis, labels):
     for wsi, wsi_label in zip(wsis, labels):
         number_of_patches = wsi.shape[0]
         tmp_y.append(np.tile(wsi_label, reps=number_of_patches).tolist())
+
     tmp_x = np.concatenate(wsis)
+    del wsis
     tmp_y = np.concatenate(tmp_y)
     assert tmp_x.shape[0] == len(tmp_y)
 
     for index, (patch, patch_label) in enumerate(zip(tmp_x, tmp_y)):
         dataset.append((patch, patch_label))
+
+    del tmp_x, tmp_y
 
     return dataset
 

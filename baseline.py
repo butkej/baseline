@@ -62,8 +62,10 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         print("Start of training for " + str(args.epochs) + " epochs.")
         print("TRAIN:", train_index, "VAL:", val_index)
-        X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
-        y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
+        # X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
+        # y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
+        X_train, X_val = X[train_index], X[val_index]
+        y_train, y_val = y[train_index], np.array(y)[val_index]
 
         utils.check_data(X_train, "X_train")
         utils.check_data(y_train, "y_train")
@@ -83,6 +85,8 @@ def k_fold_cross_val(X, y, args, k: int = 5):
         elif args.baseline == "clam":
             pass
         elif args.baseline == "vit":
+            # Model initiliazation or reinit if fold > 1
+            model, input_size = utils.lightning_mode(args)
             pass
         else:
             print("Error! Choosen baseline strategy is unclear")
@@ -147,7 +151,7 @@ if __name__ == "__main__":
     # Data loading
     loader_kwargs = {}
     if torch.cuda.is_available():
-        loader_kwargs = {"num_workers": 0, "pin_memory": True}
+        loader_kwargs = {"num_workers": 0, "pin_memory": False}
 
     transform = torchvision.transforms.Compose(
         [
