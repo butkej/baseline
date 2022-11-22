@@ -39,7 +39,7 @@ def lightning_mode(args):
 
     elif args.lightning and args.model == "vit":
         model_kwargs = {
-            "embed_dim": 256,
+            "embed_dim": 768,
             "hidden_dim": 512,
             "num_heads": 8,
             "num_layers": 6,
@@ -50,7 +50,7 @@ def lightning_mode(args):
             "dropout": 0.2,
         }
         model = custom_model.ViT(model_kwargs, lr=3e-4)
-        return model 
+        return model
 
     else:
         model, input_size = choose_model(
