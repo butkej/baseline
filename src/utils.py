@@ -122,7 +122,7 @@ def parse_args():
         "--gpu",
         dest="num_gpus",
         help="choice of gpu amount [integer]",
-        default=2,
+        default=1,
         type=int,
     )
 
@@ -157,7 +157,7 @@ def parse_args():
         "-f",
         "--feature_extract",
         dest="feature_extract",
-        help="#TODO",
+        help="", # TODO
         default=False,
         type=bool,
     )
@@ -264,7 +264,7 @@ def check_data(data, varname: str):
     try:
         print("dtype: {}".format(data.dtype))
     except:
-        print("type: ".format(type(data)))
+        print("type: {}".format(type(data)))
     try:
         print("max: {}".format(data.max()))
         print("min: {}".format(data.min()))

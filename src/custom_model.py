@@ -6,6 +6,8 @@ import torch.utils.model_zoo as model_zoo
 from torchvision import models
 import pytorch_lightning as pl
 
+from src import utils
+
 #######
 
 
@@ -701,8 +703,9 @@ class ClassicBaseline(pl.LightningModule):
 
     def _calculate_loss(self, batch, mode="train"):
         imgs, labels = batch
-        imgs = torch.tensor(imgs)
-        # labels = F.one_hot(labels, num_classes=self.num_classes)
+
+        #imgs = torch.tensor(imgs)
+        #labels = F.one_hot(labels, num_classes=self.num_classes)
         preds = self.forward(imgs)
 
         loss = F.cross_entropy(preds, labels)

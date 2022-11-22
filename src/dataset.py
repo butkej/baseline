@@ -116,7 +116,7 @@ def convert_to_tile_dataset(wsis, labels):
         number_of_patches = wsi.shape[0]
         tmp_y.append(np.tile(wsi_label, reps=number_of_patches).tolist())
 
-    tmp_x = np.concatenate(wsis)
+    tmp_x = torch.cat(wsis, dim=0)
     del wsis
     tmp_y = np.concatenate(tmp_y)
     assert tmp_x.shape[0] == len(tmp_y)

@@ -37,7 +37,6 @@ def eval_patientwise(model, data, labels):
     print("Eval Accuracy patient wise is:")
     print(str(acc / len(labels)))
 
-    print(true_slide_labels)
     print("Patientwise AUROC is:")
     y_scores_slide = np.sum(y_probs_slide, axis=0) / len(true_slide_labels)
     print(y_scores_slide)
@@ -64,14 +63,13 @@ def k_fold_cross_val(X, y, args, k: int = 5):
         print("TRAIN:", train_index, "VAL:", val_index)
         # X_train, X_val = np.array(X)[train_index], np.array(X)[val_index]
         # y_train, y_val = np.array(y)[train_index], np.array(y)[val_index]
-        X_train, X_val = X[train_index], X[val_index]
-        y_train, y_val = y[train_index], np.array(y)[val_index]
-
-        utils.check_data(X_train, "X_train")
-        utils.check_data(y_train, "y_train")
+        X_train = [X[index] for index in train_index]
+        y_train = [y[index] for index in train_index]
+        X_val = [X[index] for index in val_index]
+        y_val = [y[index] for index in val_index]
 
         if args.baseline == "classic":
-            # Model initiliazation or reinit if fold > 1
+            # Model initilization or reinit if fold > 1
             model, input_size = utils.lightning_mode(args)
             custom_model.freeze_model_layers(model, freeze_ratio=0.5)
 
