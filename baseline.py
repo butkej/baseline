@@ -72,6 +72,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             # Model initilization or reinit if fold > 1
             model, input_size = utils.lightning_mode(args)
             custom_model.freeze_model_layers(model, freeze_ratio=0.5)
+            print(model)
 
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
             del X_train, y_train
