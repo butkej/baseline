@@ -667,12 +667,12 @@ class ViT(pl.LightningModule):
 class ClassicBaseline(pl.LightningModule):
     def __init__(
         self,
-        model_name="resnet50",
-        optimizer="adam",
-        num_classes=3,
-        input_size=224,
-        feature_extract=False,
-        use_pretrained=True,
+        model_name,
+        optimizer_name,
+        num_classes,
+        input_size,
+        feature_extract,
+        use_pretrained,
     ):
         super().__init__()
 
@@ -689,30 +689,32 @@ class ClassicBaseline(pl.LightningModule):
         num_filters = backbone.fc.in_features
         layers = list(backbone.children())[:-1]
         self.feature_extractor = nn.Sequential(*layers)
+
         self.num_classes = num_classes
         self.classifier = nn.Linear(num_filters, num_classes)
         self.input_size = input_size
-        self.optimizer = optimizer
+        self.optimizer_name = optimizer_name
+
+        self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, x):
-        self.feature_extractor.eval()
-        with torch.no_grad():
-            representations = self.feature_extractor(x).flatten(1)
+        #self.feature_extractor.eval()
+        #with torch.no_grad():
+        #    representations = self.feature_extractor(x).flatten(1)
+        representations = self.feature_extractor(x).flatten(1)
         x = self.classifier(representations)
         return x
 
     def _calculate_loss(self, batch, mode="train"):
         imgs, labels = batch
 
-        #imgs = torch.tensor(imgs)
-        #labels = F.one_hot(labels, num_classes=self.num_classes)
-        preds = self.forward(imgs)
+        preds = self(imgs)
 
-        loss = F.cross_entropy(preds, labels)
+        loss = self.criterion(preds, labels)
         acc = (preds.argmax(dim=-1) == labels).float().mean()
 
         self.log("%s_loss" % mode, loss, prog_bar=True)
-        self.log("%s_accuracy" % mode, acc, prog_bar=True)
+        self.log("%s_acc" % mode, acc, prog_bar=True, on_step=False, on_epoch=True)
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -726,7 +728,7 @@ class ClassicBaseline(pl.LightningModule):
         self._calculate_loss(batch, mode="test")
 
     def configure_optimizers(self):
-        if self.optimizer == "adam":
+        if self.optimizer_name == "adam":
             optim = torch.optim.Adam(
                 self.parameters(),
                 lr=1e-5,
@@ -735,11 +737,11 @@ class ClassicBaseline(pl.LightningModule):
                 weight_decay=1e-5,
                 amsgrad=False,
             )
-        elif self.optimizer == "adadelta":
+        elif self.optimizer_name == "adadelta":
             optim = torch.optim.Adadelta(
                 self.parameters(), lr=1.0, rho=0.9, eps=1e-06, weight_decay=0
             )
-        elif self.optimizer == "momentum":
+        elif self.optimizer_name == "momentum":
             optim = torch.optim.SGD(
                 self.parameters(),
                 lr=0.01,
@@ -751,4 +753,4 @@ class ClassicBaseline(pl.LightningModule):
         else:
             print("Error! Choosen optimizer or its parameters are unclear")
 
-        return optim
+        return [optim]

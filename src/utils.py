@@ -29,10 +29,10 @@ def lightning_mode(args):
     if args.lightning and not args.model == "vit":
         model = custom_model.ClassicBaseline(
             model_name=args.model,
-            optimizer=args.optimizer,
+            optimizer_name=args.optimizer,
             num_classes=args.num_classes,
             input_size=224,
-            feature_extract=False,
+            feature_extract=args.feature_extract,
             use_pretrained=args.pretrained,
         )
         return model, model.input_size
@@ -94,7 +94,7 @@ def parse_args():
         "--model",
         dest="model",
         help="choice of model [string]",
-        default="resnet50",
+        default="resnet18",
         type=str,
     )
 

@@ -16,7 +16,7 @@ from src import utils, custom_model, dataset
 
 
 def eval_patientwise(model, data, labels):
-    model.eval()
+    #model.eval()
     acc = 0
     true_slide_labels = []
     y_probs_slide = []
@@ -101,7 +101,7 @@ def classic(args, model, train_ds, val_ds):
         val_ds, batch_size=args.batch_size, shuffle=False, **loader_kwargs
     )
     early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
-        monitor="val_accuracy", min_delta=0.001, patience=3, verbose=True, mode="max"
+        monitor="val_acc", min_delta=0.001, patience=5, verbose=True, mode="max"
     )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     # Data loading
     loader_kwargs = {}
     if torch.cuda.is_available():
-        loader_kwargs = {"num_workers": 0, "pin_memory": False}
+        loader_kwargs = {"num_workers": 4, "pin_memory": False}
 
     transform = torchvision.transforms.Compose(
         [
