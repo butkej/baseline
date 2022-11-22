@@ -16,7 +16,7 @@ from src import utils, custom_model, dataset
 
 
 def eval_patientwise(model, data, labels):
-    #model.eval()
+    # model.eval()
     acc = 0
     true_slide_labels = []
     y_probs_slide = []
@@ -27,29 +27,33 @@ def eval_patientwise(model, data, labels):
         true_slide_labels.append(wsi_label)
         for img in wsi:
             pred = model(img.unsqueeze(dim=0))
-            y_probs.append(pred.detach().cpu().numpy())
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
+            y_probs.append(torch.nn.Softmax(pred).detach().cpu().numpy())
 
         y_probs_slide.append(np.mean(y_probs, axis=0))
 
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
     print("Eval Accuracy patient wise is:")
-    print(str(acc / len(labels)))
+    acc_patientwise = acc / len(labels)
+    print(str(acc_patientwise))
 
     print("Patientwise AUROC is:")
     y_scores_slide = np.sum(y_probs_slide, axis=0) / len(true_slide_labels)
     print(y_scores_slide)
-    roc_auc_score(
+    auc = roc_auc_score(
         y_true=true_slide_labels,
         y_score=y_scores_slide,
         multi_class="ovr",
     )
+    print(str(auc))
+    return acc_patientwise, auc
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
+    results = {}
     KF = StratifiedKFold(n_splits=k, shuffle=True)
 
     print(KF.get_n_splits())
@@ -79,18 +83,30 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             classic(args, model, train_dataset, val_dataset)
-            eval_patientwise(model, X_val, y_val)
+            acc, auc = eval_patientwise(model, X_val, y_val)
+            results["Accuracy in Fold {}".format(fold)] = acc
+            results["ROC-AUC in Fold {}".format(fold)] = auc
 
         elif args.baseline == "clam":
             pass
+
         elif args.baseline == "vit":
             # Model initiliazation or reinit if fold > 1
             model, input_size = utils.lightning_mode(args)
-            pass
+            train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
+            del X_train, y_train
+            val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
+
+            classic(args, model, train_dataset, val_dataset)
+            acc, auc = eval_patientwise(model, X_val, y_val)
+            results["Accuracy in Fold {}".format(fold)] = acc
+            results["ROC-AUC in Fold {}".format(fold)] = auc
+
         else:
             print("Error! Choosen baseline strategy is unclear")
 
         fold += 1
+    return results
 
 
 def classic(args, model, train_ds, val_ds):
@@ -188,4 +204,6 @@ if __name__ == "__main__":
 
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
-    k_fold_cross_val(X, y, args)
+    results = k_fold_cross_val(X, y, args)
+
+    print(results)

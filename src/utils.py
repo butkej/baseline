@@ -43,10 +43,10 @@ def lightning_mode(args):
             "hidden_dim": 512,
             "num_heads": 8,
             "num_layers": 6,
-            "patch_size": 4,
+            "patch_size": 16,
             "num_channels": 3,
             "num_patches": 64,
-            "num_classes": 10,
+            "num_classes": args.num_classes,
             "dropout": 0.2,
         }
         model, custom_model.ViT(**model_kwargs)
@@ -157,7 +157,7 @@ def parse_args():
         "-f",
         "--feature_extract",
         dest="feature_extract",
-        help="", # TODO
+        help="",  # TODO
         default=False,
         type=bool,
     )
