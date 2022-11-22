@@ -20,6 +20,7 @@ def eval_patientwise(model, data, labels):
     acc = 0
     true_slide_labels = []
     y_probs_slide = []
+    softmax = torch.nn.Softmax(dim=1)
 
     for wsi, wsi_label in zip(data, labels):
         y_probs = []
@@ -28,22 +29,23 @@ def eval_patientwise(model, data, labels):
         for img in wsi:
             pred = model(img.unsqueeze(dim=0))
             preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
-            y_probs.append(torch.nn.Softmax(pred).detach().cpu().numpy())
 
-        y_probs_slide.append(np.mean(y_probs, axis=0))
+            softmaxxed = softmax(pred)
+            y_probs.append(softmaxxed.detach().cpu().numpy())
+
+        y_probs_slide.append(np.mean(y_probs, axis=0)[0])
 
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
+
     print("Eval Accuracy patient wise is:")
     acc_patientwise = acc / len(labels)
     print(str(acc_patientwise))
 
     print("Patientwise AUROC is:")
-    y_scores_slide = np.sum(y_probs_slide, axis=0) / len(true_slide_labels)
-    print(y_scores_slide)
     auc = roc_auc_score(
         y_true=true_slide_labels,
-        y_score=y_scores_slide,
+        y_score=y_probs_slide,
         multi_class="ovr",
     )
     print(str(auc))
@@ -76,7 +78,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             # Model initilization or reinit if fold > 1
             model, input_size = utils.lightning_mode(args)
             custom_model.freeze_model_layers(model, freeze_ratio=0.5)
-            print(model)
+            if fold == 1: print(model)
 
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
             del X_train, y_train
@@ -92,7 +94,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         elif args.baseline == "vit":
             # Model initiliazation or reinit if fold > 1
-            model, input_size = utils.lightning_mode(args)
+            model = utils.lightning_mode(args)
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
             del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)

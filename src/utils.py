@@ -49,8 +49,8 @@ def lightning_mode(args):
             "num_classes": args.num_classes,
             "dropout": 0.2,
         }
-        model, custom_model.ViT(**model_kwargs)
-        return model, model.input_size
+        model = custom_model.ViT(model_kwargs, lr=3e-4)
+        return model 
 
     else:
         model, input_size = choose_model(
