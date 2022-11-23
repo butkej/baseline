@@ -100,7 +100,7 @@ def patch_wsi(wsi_info, transform, path_to_data: str, magnification: str = "40x"
         img = transform(img)
         patches[i] = img
 
-        return patches, label
+    return patches, label
 
 
 def convert_to_tile_dataset(wsis, labels):
