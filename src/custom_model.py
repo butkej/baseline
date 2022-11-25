@@ -625,7 +625,10 @@ class ViT(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.model = VisionTransformer(**model_kwargs)
-        #self.example_input_array = next(iter(train_loader))[0]
+        # self.example_input_array = next(iter(train_loader))[0]
+
+    def load_model(self, path):
+        self.model.load_state_dict(torch.load(path), strict=False)
 
     def forward(self, x):
         return self.model(x)
@@ -697,8 +700,8 @@ class ClassicBaseline(pl.LightningModule):
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, x):
-        #self.feature_extractor.eval()
-        #with torch.no_grad():
+        # self.feature_extractor.eval()
+        # with torch.no_grad():
         #    representations = self.feature_extractor(x).flatten(1)
         representations = self.feature_extractor(x).flatten(1)
         x = self.classifier(representations)

@@ -93,7 +93,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             acc, auc = eval_patientwise(model, X_val, y_val)
             results["Accuracy in Fold {}".format(fold)] = acc
             results["ROC-AUC in Fold {}".format(fold)] = auc
-            del train_dataset, val_dataset, X_val, y_val
+            del train_dataset, val_dataset, X_val, y_val, model
 
         elif args.baseline == "clam":
             pass
@@ -116,7 +116,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             acc, auc = eval_patientwise(model, X_val, y_val)
             results["Accuracy in Fold {}".format(fold)] = acc
             results["ROC-AUC in Fold {}".format(fold)] = auc
-            del train_dataset, val_dataset, X_val, y_val
+            del train_dataset, val_dataset, X_val, y_val, model
 
         else:
             print("Error! Choosen baseline strategy is unclear")
@@ -167,11 +167,11 @@ if __name__ == "__main__":
     PATCH_INFO_DIR = "csv_JMR/"
     SUBTYPES = ["DLBCL", "FL", "Reactive"]
     MAGNIFICATION = "40x"  # or "20x" or "10x"
+    VIT_PRETRAINED_PATH = "src/ViT_B_16_imagenet1k_pretrained.pth"
     # SUBTYPES = [['DLBCL', 'FL'],['AITL', 'ATLL'],['CHL'],['Reactive']]
 
     # Setup
     utils.seed_everything(3407)
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     args = utils.parse_args()
     args_dict = vars(args)
@@ -223,3 +223,13 @@ if __name__ == "__main__":
     results = k_fold_cross_val(X, y, args)
 
     print(results)
+    print("{}-fold summarized results:".format(args.folds))
+    overall_acc = 0
+    overall_auroc = 0
+    for key in results.keys():
+        if "Accuracy" in key:
+            overall_acc += results[key]
+        elif "AUC" in key:
+            overall_auroc += results[key]
+    print("Accuracy: {}".format(str(overall_acc / args.folds)))
+    print("AUROC: {}".format(str(overall_auroc / args.folds)))

@@ -7,7 +7,9 @@ from torchvision import models
 
 from src import custom_model
 
+
 # Functions & Classes
+
 
 def parse_args():
     """Parse input arguments.
@@ -36,7 +38,7 @@ def parse_args():
         dest="lightning",
         help="use pytorch-lightning [bool]",
         default=False,
-        action='store_true',
+        action="store_true",
     )
 
     parser.add_argument(
@@ -133,6 +135,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def seed_everything(seed: int = 3407) -> None:
     """Function to pass a seed argument to all common packages for ML/DL
     lol @ https://arxiv.org/pdf/2109.08203.pdf"""
@@ -174,7 +177,9 @@ def lightning_mode(args):
             "num_classes": args.num_classes,
             "dropout": 0.2,
         }
-        model = custom_model.ViT(model_kwargs, lr=3e-4)
+        model = custom_model.ViT(model_kwargs, lr=1e-4)
+        if args.pretrained:
+            model.load_model(VIT_PRETRAINED_PATH)
         return model
 
     else:
@@ -182,8 +187,6 @@ def lightning_mode(args):
             args.model, args.num_classes, args.feature_extract, args.pretrained
         )
         return model, input_size
-
-
 
 
 def choose_model(
