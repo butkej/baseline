@@ -7,6 +7,7 @@ from torchvision import models
 
 from src import custom_model
 
+VIT_PRETRAINED_PATH = "./src/ViT_B_16_imagenet1k_pretrained.pth"
 
 # Functions & Classes
 

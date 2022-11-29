@@ -100,14 +100,14 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         elif args.baseline == "vit":
             # Model initilization or reinit if fold > 1
-            model, input_size = utils.lightning_mode(args)
+            model = utils.lightning_mode(args)
             if args.freeze:
                 custom_model.freeze_model_layers(model, freeze_ratio=0.5)
             if fold == 1:
                 print(model)
 
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
-            del X_train, y_train
+            #del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             model.train()
@@ -116,7 +116,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             acc, auc = eval_patientwise(model, X_val, y_val)
             results["Accuracy in Fold {}".format(fold)] = acc
             results["ROC-AUC in Fold {}".format(fold)] = auc
-            del train_dataset, val_dataset, X_val, y_val, model
+            #del train_dataset, val_dataset, X_val, y_val, model
 
         else:
             print("Error! Choosen baseline strategy is unclear")
