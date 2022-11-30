@@ -30,8 +30,8 @@ def load_data_paths(subtypes: list, path_to_slide_info: str):
             path_to_slide_info + f"{subtype}.txt", delimiter=",", dtype="str"
         ).tolist()
 
-        for slide in range(len(list_id[:300])):
-        #for slide in range(len(list_id)):
+        for slide in range(len(list_id[:10])):
+            # for slide in range(len(list_id)):
             data.append(list_id.pop(0))
             labels.append(label)
         label += 1

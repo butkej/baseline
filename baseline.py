@@ -8,7 +8,7 @@ import torchvision
 import pytorch_lightning as pl
 
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report
 from src import utils, custom_model, dataset
 
 
@@ -16,10 +16,15 @@ from src import utils, custom_model, dataset
 
 
 def eval_patientwise(model, data, labels):
+    """performs evalutation with a model and a given X,y dataset split (e.g. val or test)
+    Computes patientwise (bag or collection of tiles)
+    accuracy, AUROC, classification_report and confusion matrix
+    """
     model.eval()
     acc = 0
     true_slide_labels = []
     y_probs_slide = []
+    y_preds_slide = []
     softmax = torch.nn.Softmax(dim=1)
 
     for wsi, wsi_label in zip(data, labels):
@@ -38,6 +43,7 @@ def eval_patientwise(model, data, labels):
 
         if np.round(np.mean(preds)) == wsi_label:
             acc += 1
+        y_preds_slide.append(np.round(np.mean(preds)))
 
     print("Eval Accuracy patient wise is:")
     acc_patientwise = acc / len(labels)
@@ -50,7 +56,17 @@ def eval_patientwise(model, data, labels):
         multi_class="ovr",
     )
     print(str(auc))
-    return acc_patientwise, auc
+
+    print("Classification report:")
+    cr = classification_report(
+        y_true=true_slide_labels, y_pred=y_preds_slide, target_names=SUBTYPES
+    )
+    print(cr)
+
+    print("Confusion Matrix:")
+    cm = confusion_matrix(y_true=true_slide_labels, y_pred=y_preds_slide)
+    print(cm)
+    return acc_patientwise, auc, cr, cm
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
@@ -90,9 +106,11 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model.train()
 
             classic(args, model, train_dataset, val_dataset)
-            acc, auc = eval_patientwise(model, X_val, y_val)
-            results["Accuracy in Fold {}".format(fold)] = acc
-            results["ROC-AUC in Fold {}".format(fold)] = auc
+            acc, auc, cr, cm = eval_patientwise(model, X_val, y_val)
+            results["Accuracy for Fold {}".format(fold)] = acc
+            results["ROC-AUC for Fold {}".format(fold)] = auc
+            results["Classification Report for Fold {}".format(fold)] = cr
+            results["Conf Matrix for Fold {}".format(fold)] = cm
             del train_dataset, val_dataset, X_val, y_val, model
 
         elif args.baseline == "clam":
@@ -107,16 +125,18 @@ def k_fold_cross_val(X, y, args, k: int = 5):
                 print(model)
 
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
-            #del X_train, y_train
+            # del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             model.train()
 
             classic(args, model, train_dataset, val_dataset)
-            acc, auc = eval_patientwise(model, X_val, y_val)
-            results["Accuracy in Fold {}".format(fold)] = acc
-            results["ROC-AUC in Fold {}".format(fold)] = auc
-            #del train_dataset, val_dataset, X_val, y_val, model
+            acc, auc, cr, cm = eval_patientwise(model, X_val, y_val)
+            results["Accuracy for Fold {}".format(fold)] = acc
+            results["ROC-AUC for Fold {}".format(fold)] = auc
+            results["Classification Report for Fold {}".format(fold)] = cr
+            results["Conf Matrix for Fold {}".format(fold)] = cm
+            # del train_dataset, val_dataset, X_val, y_val, model
 
         else:
             print("Error! Choosen baseline strategy is unclear")
@@ -226,10 +246,15 @@ if __name__ == "__main__":
     print("{}-fold summarized results:".format(args.folds))
     overall_acc = 0
     overall_auroc = 0
+    overall_cm = []
     for key in results.keys():
         if "Accuracy" in key:
             overall_acc += results[key]
         elif "AUC" in key:
             overall_auroc += results[key]
+        elif "Confusion" in key:
+            overall_cm.append(results[key])
+
     print("Accuracy: {}".format(str(overall_acc / args.folds)))
     print("AUROC: {}".format(str(overall_auroc / args.folds)))
+    print(np.add.reduce(overall_cm))
