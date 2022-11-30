@@ -242,19 +242,18 @@ if __name__ == "__main__":
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
     results = k_fold_cross_val(X, y, args)
 
-    print(results)
     print("{}-fold summarized results:".format(args.folds))
     overall_acc = 0
     overall_auroc = 0
-    overall_cm = []
+    overall_cm = np.zeros((len(SUBTYPES),len(SUBTYPES)))
     for key in results.keys():
         if "Accuracy" in key:
             overall_acc += results[key]
         elif "AUC" in key:
             overall_auroc += results[key]
-        elif "Confusion" in key:
-            overall_cm.append(results[key])
+        elif "Conf" in key:
+            overall_cm += results[key]
 
     print("Accuracy: {}".format(str(overall_acc / args.folds)))
     print("AUROC: {}".format(str(overall_auroc / args.folds)))
-    print(np.add.reduce(overall_cm))
+    print(overall_cm)
