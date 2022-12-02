@@ -69,6 +69,10 @@ def eval_patientwise(model, data, labels):
     return acc_patientwise, auc, cr, cm
 
 
+def eval_bagwise():
+    pass
+
+
 def k_fold_cross_val(X, y, args, k: int = 5):
     """k-fold cross validation for any number of RUNS where each run
     splits the data into the same amount of SPLITS."""
@@ -114,7 +118,30 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             del train_dataset, val_dataset, X_val, y_val, model
 
         elif args.baseline == "clam":
-            pass
+            feature_extractor = custom_model.Resnet50_baseline(
+                pretrained=args.pretrained
+            )
+            X_train_features = dataset.feature_extract_bag(feature_extractor, X_train)
+            del X_train
+            X_val_features = dataset.feature_extract_bag(feature_extractor, X_val)
+            del X_val
+
+            train_dataset = dataset.convert_to_tile_dataset(X_train_features, y_train)
+            del X_train_features, y_train
+            val_dataset = dataset.convert_to_tile_dataset(X_val_features, y_val)
+
+            model_kwargs = {
+                gate: True,
+                size_arg: "small",
+                dropout: False,
+                k_sample: 8,
+                n_classes: len(SUBTYPES),
+                instance_loss_fn: nn.CrossEntropyLoss(),
+                subtyping: False,
+            }
+
+            model = custom_model.CLAM_Lightning(model_kwargs)
+            clam(args, model, train_dataset, val_dataset)
 
         elif args.baseline == "vit":
             # Model initilization or reinit if fold > 1
@@ -167,12 +194,25 @@ def classic(args, model, train_ds, val_ds):
     trainer.fit(model, train_dl, val_dl)
 
 
-def clam(args):
-    pass
-
-
-def vit(args):
-    pass
+def clam(args, model, train_ds, val_ds):
+    train_dl = torch.utils.data.DataLoader(
+        train_ds, batch_size=1, shuffle=True, **loader_kwargs
+    )
+    val_dl = torch.utils.data.DataLoader(
+        val_ds, batch_size=1, shuffle=False, **loader_kwargs
+    )
+    early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
+        monitor="val_acc", min_delta=0.001, patience=5, verbose=True, mode="max"
+    )
+    trainer = pl.Trainer(
+        max_epochs=args.epochs,
+        accelerator="gpu",
+        devices=args.num_gpus,
+        default_root_dir=EXPERIMENT_DIR,
+        enable_progress_bar=True,
+        callbacks=[early_stop_callback],
+    )
+    trainer.fit(model, train_dl, val_dl)
 
 
 ######
@@ -245,7 +285,7 @@ if __name__ == "__main__":
     print("{}-fold summarized results:".format(args.folds))
     overall_acc = 0
     overall_auroc = 0
-    overall_cm = np.zeros((len(SUBTYPES),len(SUBTYPES)))
+    overall_cm = np.zeros((len(SUBTYPES), len(SUBTYPES)))
     for key in results.keys():
         if "Accuracy" in key:
             overall_acc += results[key]

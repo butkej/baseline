@@ -222,13 +222,6 @@ def choose_model(
         model.fc = nn.Linear(num_ftrs, num_classes)
         input_size = 224
 
-    # elif model_name == "vit":
-    #    model = ViT("B_32_imagenet1k", pretrained=True)
-    #    set_parameter_requires_grad(model, feature_extract)
-    #    num_ftrs = model.fc.in_features
-    #    model.fc = nn.Linear(num_ftrs, num_classes)
-    #    input_size = 384  # TODO ?
-    # TODO VIT and CLAM selection
     else:
         print("Error! Choosen model is unclear.")
 

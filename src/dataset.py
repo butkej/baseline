@@ -129,6 +129,36 @@ def convert_to_tile_dataset(wsis, labels):
     return dataset
 
 
+def feature_extract_bag(feature_extractor, data):
+    data_features = []
+    feature_extractor.cuda()
+    for bag in data:
+        bag_features = []
+        for img in bag:
+            with torch.no_grad():
+                img_features = feature_extractor(img.unsqueeze(dim=0).cuda())
+            bag_features.append(img_features.cpu().numpy())
+        data_features.append(bag_features)
+    return data_features
+
+
+def convert_to_bag_dataset(data, labels):
+    """
+    Inputs:
+        a list of bags and a list of bag-labels
+    Outputs:
+        Returns a dataset (list) containing (stacked tiled instance data, bag label)
+    """
+    dataset = []
+
+    for index, (bag, bag_label) in enumerate(zip(data, labels)):
+        bag_data = np.asarray(bag, dtype="float32")
+        bag_label = np.asarray(bag_label, dtype="float32")
+        dataset.append((bag_data, bag_label))
+
+    return dataset
+
+
 class PatchDataset(torch.utils.data.Dataset):
     def __init__(
         self, dataset, wsi_path: str, magnification: str = "40x", transform=None

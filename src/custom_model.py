@@ -497,6 +497,52 @@ class CLAM_MB(CLAM_SB):
         return logits, Y_prob, Y_hat, A_raw, results_dict
 
 
+class CLAM_Lightning(pl.LightningModule):
+    def __init__(self, model_kwargs, lr):
+        super().__init__()
+        self.save_hyperparameters()
+        self.model = CLAM_MB(**model_kwargs)
+        # self.example_input_array = next(iter(train_loader))[0]
+
+    def load_model(self, path):
+        self.model.load_state_dict(torch.load(path), strict=False)
+
+    def forward(self, x):
+        return self.model(x)
+
+    def configure_optimizers(self):
+        optim = torch.optim.Adam(
+            self.parameters(),
+            lr=1e-5,
+            betas=(0.9, 0.999),
+            eps=1e-08,
+            weight_decay=1e-5,
+            amsgrad=False,
+        )
+
+        return [optim]
+
+    def _calculate_loss(self, batch, mode="train"):
+        imgs, label = batch
+        logits, Y_prob, Y_hat, A_raw, results_dict = self.model(imgs)
+        loss = F.cross_entropy(logits, label)
+        acc = (logits.argmax(dim=-1) == label).float().mean()
+
+        self.log("%s_loss" % mode, loss)
+        self.log("%s_acc" % mode, acc)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        loss = self._calculate_loss(batch, mode="train")
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        self._calculate_loss(batch, mode="val")
+
+    def test_step(self, batch, batch_idx):
+        self._calculate_loss(batch, mode="test")
+
+
 ######
 
 # VIT
