@@ -138,7 +138,7 @@ def feature_extract_bag(feature_extractor, data):
             with torch.no_grad():
                 img_features = feature_extractor(img.unsqueeze(dim=0).cuda())
             bag_features.append(img_features.cpu().numpy())
-        data_features.append(bag_features)
+        data_features.append(np.concatenate(bag_features))
     return data_features
 
 

@@ -498,7 +498,7 @@ class CLAM_MB(CLAM_SB):
 
 
 class CLAM_Lightning(pl.LightningModule):
-    def __init__(self, model_kwargs, lr):
+    def __init__(self, model_kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.model = CLAM_MB(**model_kwargs)

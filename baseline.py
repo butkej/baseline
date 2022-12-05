@@ -3,6 +3,7 @@ import argparse
 import random
 import numpy as np
 import torch
+import torch.nn as nn
 import torchvision
 
 import pytorch_lightning as pl
@@ -126,18 +127,21 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             X_val_features = dataset.feature_extract_bag(feature_extractor, X_val)
             del X_val
 
-            train_dataset = dataset.convert_to_tile_dataset(X_train_features, y_train)
+            train_dataset = dataset.convert_to_bag_dataset(X_train_features, y_train)
             del X_train_features, y_train
-            val_dataset = dataset.convert_to_tile_dataset(X_val_features, y_val)
+            val_dataset = dataset.convert_to_bag_dataset(X_val_features, y_val)
+
+            print(val_dataset[2][0].shape)
+            print(val_dataset[2][1])
 
             model_kwargs = {
-                gate: True,
-                size_arg: "small",
-                dropout: False,
-                k_sample: 8,
-                n_classes: len(SUBTYPES),
-                instance_loss_fn: nn.CrossEntropyLoss(),
-                subtyping: False,
+                "gate": True,
+                "size_arg": "small",
+                "dropout": False,
+                "k_sample": 8,
+                "n_classes": len(SUBTYPES),
+                "instance_loss_fn": nn.CrossEntropyLoss(),
+                "subtyping": True,
             }
 
             model = custom_model.CLAM_Lightning(model_kwargs)
