@@ -137,7 +137,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model_kwargs = {
                 "gate": True,
                 "size_arg": "small",
-                "dropout": False,
+                "dropout": True,
                 "k_sample": 8,
                 "n_classes": len(SUBTYPES),
                 "instance_loss_fn": nn.CrossEntropyLoss(),

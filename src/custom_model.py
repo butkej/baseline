@@ -304,7 +304,8 @@ class CLAM_SB(nn.Module):
 
     # instance-level evaluation for in-the-class attention branch
     def inst_eval(self, A, h, classifier):
-        device = h.device
+        # device = h.device
+        device = None
         if len(A.shape) == 1:
             A = A.view(1, -1)
         top_p_ids = torch.topk(A, self.k_sample)[1][-1]
@@ -323,7 +324,8 @@ class CLAM_SB(nn.Module):
 
     # instance-level evaluation for out-of-the-class attention branch
     def inst_eval_out(self, A, h, classifier):
-        device = h.device
+        # device = h.device
+        device = None
         if len(A.shape) == 1:
             A = A.view(1, -1)
         top_p_ids = torch.topk(A, self.k_sample)[1][-1]
@@ -342,7 +344,8 @@ class CLAM_SB(nn.Module):
         return_features=False,
         attention_only=False,
     ):
-        device = h.device
+        # device = h.device
+        device = None
         A, h = self.attention_net(h)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
         if attention_only:
@@ -442,7 +445,8 @@ class CLAM_MB(CLAM_SB):
         return_features=False,
         attention_only=False,
     ):
-        device = h.device
+        # device = h.device
+        device = None
         A, h = self.attention_net(h)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
         if attention_only:
