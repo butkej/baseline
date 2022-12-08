@@ -16,7 +16,7 @@ from src import utils, custom_model, dataset
 # Functions & Classes
 
 
-def eval_patientwise(model, data, labels):
+def eval_patientwise(model, data, labels, mode: str = "classic"):
     """performs evalutation with a model and a given X,y dataset split (e.g. val or test)
     Computes patientwise (bag or collection of tiles)
     accuracy, AUROC, classification_report and confusion matrix
@@ -32,23 +32,36 @@ def eval_patientwise(model, data, labels):
         y_probs = []
         preds = []
         true_slide_labels.append(wsi_label)
-        for img in wsi:
+
+        if mode == "classic":
+            for img in wsi:
+                with torch.no_grad():
+                    pred = model(img.unsqueeze(dim=0))
+                preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
+
+                softmaxxed = softmax(pred)
+                y_probs.append(softmaxxed.detach().cpu().numpy())
+
+            y_probs_slide.append(np.mean(y_probs, axis=0)[0])
+            if np.round(np.mean(preds)) == wsi_label:
+                acc += 1
+            y_preds_slide.append(np.round(np.mean(preds)))
+
+        elif mode == "bag":
             with torch.no_grad():
-                pred = model(img.unsqueeze(dim=0))
-            preds.append(pred.argmax(dim=-1).detach().cpu().numpy())
-
-            softmaxxed = softmax(pred)
-            y_probs.append(softmaxxed.detach().cpu().numpy())
-
-        y_probs_slide.append(np.mean(y_probs, axis=0)[0])
-
-        if np.round(np.mean(preds)) == wsi_label:
-            acc += 1
-        y_preds_slide.append(np.round(np.mean(preds)))
-
+                _, pred, _, _, _ = model(torch.from_numpy(wsi).unsqueeze(dim=0))
+            y_probs_slide.append(pred.squeeze().detach().cpu().numpy())
+            y_preds_slide.append(pred.argmax(dim=-1).detach().cpu().numpy())
+            if pred.argmax(dim=-1).detach().cpu().numpy() == wsi_label:
+                acc += 1
+            
     print("Eval Accuracy patient wise is:")
     acc_patientwise = acc / len(labels)
     print(str(acc_patientwise))
+
+    print(true_slide_labels)
+    print(y_probs_slide)
+    print(y_preds_slide)
 
     print("Patientwise AUROC is:")
     auc = roc_auc_score(
@@ -69,9 +82,6 @@ def eval_patientwise(model, data, labels):
     print(cm)
     return acc_patientwise, auc, cr, cm
 
-
-def eval_bagwise():
-    pass
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
@@ -147,6 +157,12 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model = custom_model.CLAM_Lightning(model_kwargs)
             clam(args, model, train_dataset, val_dataset)
 
+            acc, auc, cr, cm = eval_patientwise(model, X_val_features, y_val, mode="bag")
+            results["Accuracy for Fold {}".format(fold)] = acc
+            results["ROC-AUC for Fold {}".format(fold)] = auc
+            results["Classification Report for Fold {}".format(fold)] = cr
+            results["Conf Matrix for Fold {}".format(fold)] = cm
+
         elif args.baseline == "vit":
             # Model initilization or reinit if fold > 1
             model = utils.lightning_mode(args)
@@ -206,7 +222,7 @@ def clam(args, model, train_ds, val_ds):
         val_ds, batch_size=1, shuffle=False, **loader_kwargs
     )
     early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
-        monitor="val_acc", min_delta=0.001, patience=5, verbose=True, mode="max"
+        monitor="val_acc", min_delta=0.001, patience=10, verbose=True, mode="max"
     )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
@@ -252,6 +268,7 @@ if __name__ == "__main__":
         [
             torchvision.transforms.Resize((224, 224)),
             torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
 
