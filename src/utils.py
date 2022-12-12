@@ -202,14 +202,18 @@ def choose_model(
     input_size = 0
 
     if model_name == "resnet18":
-        model = models.resnet18(pretrained=use_pretrained)
+        if use_pretrained:
+            model = models.resnet18(weights="IMAGENET1K_V2")
+        else: model = models.resnet18()
         set_parameter_requires_grad(model, feature_extract)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_classes)
         input_size = 224
 
     elif model_name == "resnet50":
-        model = models.resnet50(pretrained=use_pretrained)
+        if use_pretrained:
+            model = models.resnet50(weights="IMAGENET1K_V2")
+        else: model = models.resnet50()
         set_parameter_requires_grad(model, feature_extract)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_classes)

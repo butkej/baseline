@@ -30,8 +30,8 @@ def load_data_paths(subtypes: list, path_to_slide_info: str):
             path_to_slide_info + f"{subtype}.txt", delimiter=",", dtype="str"
         ).tolist()
 
-        for slide in range(len(list_id[:10])):
-        #for slide in range(len(list_id)):
+        #for slide in range(len(list_id[:20])):
+        for slide in range(len(list_id)):
             data.append(list_id.pop(0))
             labels.append(label)
         label += 1
@@ -132,6 +132,7 @@ def convert_to_tile_dataset(wsis, labels):
 def feature_extract_bag(feature_extractor, data):
     data_features = []
     feature_extractor.cuda()
+    feature_extractor.eval()
     for bag in data:
         bag_features = []
         for img in bag:

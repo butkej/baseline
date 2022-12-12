@@ -531,11 +531,17 @@ class CLAM_Lightning(pl.LightningModule):
 
         logits, Y_prob, Y_hat, A_raw, results_dict = self.model(imgs, label=label, instance_eval=True)
         loss = F.cross_entropy(logits, label)
+
+        bag_weight = torch.tensor(0.7).cuda()
+        instance_loss = results_dict['instance_loss']
+
+        total_loss = bag_weight * loss + (1-bag_weight) * instance_loss
+
         acc = (logits.argmax(dim=-1) == label).float().mean()
 
-        self.log("%s_loss" % mode, loss)
+        self.log("%s_loss" % mode, total_loss)
         self.log("%s_acc" % mode, acc)
-        return loss
+        return total_loss
 
     def training_step(self, batch, batch_idx):
         loss = self._calculate_loss(batch, mode="train")
@@ -731,12 +737,21 @@ class ClassicBaseline(pl.LightningModule):
 
         # init a pretrained resnet
         self.use_pretrained = use_pretrained
-        if model_name == "resnet50":
-            backbone = models.resnet50(pretrained=self.use_pretrained)
-        elif model_name == "resnet18":
-            backbone = models.resnet18(pretrained=self.use_pretrained)
-        elif model_name == "resnet50-bottlenecked":
-            backbone = Resnet50_baseline(pretrained=self.use_pretrained)
+        if self.use_pretrained:
+            if model_name == "resnet50":
+                backbone = models.resnet50(weights="IMAGENET1K_V2")
+            elif model_name == "resnet18":
+                backbone = models.resnet18(weights="IMAGENET1K_V2")
+            elif model_name == "resnet50-bottlenecked":
+                backbone = Resnet50_baseline(pretrained=self.use_pretrained)
+        else:
+            if model_name == "resnet50":
+                backbone = models.resnet50()
+            elif model_name == "resnet18":
+                backbone = models.resnet18()
+            elif model_name == "resnet50-bottlenecked":
+                backbone = Resnet50_baseline()
+
 
         set_parameter_requires_grad(backbone, feature_extract)
         num_filters = backbone.fc.in_features

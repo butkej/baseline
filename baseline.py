@@ -7,10 +7,9 @@ import torch.nn as nn
 import torchvision
 
 import pytorch_lightning as pl
-from topk import SmoothTop1SVM
 
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report
+from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, matthews_corrcoef
 from src import utils, custom_model, dataset
 
 
@@ -50,7 +49,8 @@ def eval_patientwise(model, data, labels, mode: str = "classic"):
 
         elif mode == "bag":
             with torch.no_grad():
-                _, pred, _, _, _ = model(torch.from_numpy(wsi).unsqueeze(dim=0))
+                wsi = torch.from_numpy(wsi)
+                _, pred, _, _, _ = model(wsi)
             y_probs_slide.append(pred.squeeze().detach().cpu().numpy())
             y_preds_slide.append(pred.argmax(dim=-1).detach().cpu().numpy())
             if pred.argmax(dim=-1).detach().cpu().numpy() == wsi_label:
@@ -60,28 +60,28 @@ def eval_patientwise(model, data, labels, mode: str = "classic"):
     acc_patientwise = acc / len(labels)
     print(str(acc_patientwise))
 
-    print(true_slide_labels)
-    print(y_probs_slide)
-    print(y_preds_slide)
-
     print("Patientwise AUROC is:")
     auc = roc_auc_score(
         y_true=true_slide_labels,
         y_score=y_probs_slide,
-        multi_class="ovr",
+        multi_class="ovo",
     )
     print(str(auc))
 
     print("Classification report:")
     cr = classification_report(
-        y_true=true_slide_labels, y_pred=y_preds_slide, target_names=SUBTYPES
+        y_true=true_slide_labels, y_pred=y_preds_slide, target_names=SUBTYPES, zero_division=0
     )
     print(cr)
 
     print("Confusion Matrix:")
     cm = confusion_matrix(y_true=true_slide_labels, y_pred=y_preds_slide)
     print(cm)
-    return acc_patientwise, auc, cr, cm
+    
+    print("Matthews Corr Coeff:")
+    mcc = matthews_corrcoef(y_true=true_slide_labels, y_pred=y_preds_slide)
+    print(mcc)
+    return acc_patientwise, auc, cr, cm, mcc
 
 
 
@@ -122,14 +122,16 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model.train()
 
             classic(args, model, train_dataset, val_dataset)
-            acc, auc, cr, cm = eval_patientwise(model, X_val, y_val)
+            acc, auc, cr, cm, mcc = eval_patientwise(model, X_val, y_val)
             results["Accuracy for Fold {}".format(fold)] = acc
             results["ROC-AUC for Fold {}".format(fold)] = auc
             results["Classification Report for Fold {}".format(fold)] = cr
             results["Conf Matrix for Fold {}".format(fold)] = cm
+            results["MCC for Fold {}".format(fold)] = mcc
             del train_dataset, val_dataset, X_val, y_val, model
 
         elif args.baseline == "clam":
+            from topk import SmoothTop1SVM
             feature_extractor = custom_model.Resnet50_baseline(
                 pretrained=args.pretrained
             )
@@ -159,11 +161,12 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model = custom_model.CLAM_Lightning(model_kwargs)
             clam(args, model, train_dataset, val_dataset)
 
-            acc, auc, cr, cm = eval_patientwise(model, X_val_features, y_val, mode="bag")
+            acc, auc, cr, cm, mcc= eval_patientwise(model, X_val_features, y_val, mode="bag")
             results["Accuracy for Fold {}".format(fold)] = acc
             results["ROC-AUC for Fold {}".format(fold)] = auc
             results["Classification Report for Fold {}".format(fold)] = cr
             results["Conf Matrix for Fold {}".format(fold)] = cm
+            results["MCC for Fold {}".format(fold)] = mcc
 
         elif args.baseline == "vit":
             # Model initilization or reinit if fold > 1
@@ -180,11 +183,12 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model.train()
 
             classic(args, model, train_dataset, val_dataset)
-            acc, auc, cr, cm = eval_patientwise(model, X_val, y_val)
+            acc, auc, cr, cm, mcc = eval_patientwise(model, X_val, y_val)
             results["Accuracy for Fold {}".format(fold)] = acc
             results["ROC-AUC for Fold {}".format(fold)] = auc
             results["Classification Report for Fold {}".format(fold)] = cr
             results["Conf Matrix for Fold {}".format(fold)] = cm
+            results["MCC for Fold {}".format(fold)] = mcc
             # del train_dataset, val_dataset, X_val, y_val, model
 
         else:
@@ -224,7 +228,7 @@ def clam(args, model, train_ds, val_ds):
         val_ds, batch_size=1, shuffle=False, **loader_kwargs
     )
     early_stop_callback = pl.callbacks.early_stopping.EarlyStopping(
-        monitor="val_acc", min_delta=0.001, patience=10, verbose=True, mode="max"
+        monitor="val_acc", min_delta=0.001, patience=15, verbose=True, mode="max"
     )
     trainer = pl.Trainer(
         max_epochs=args.epochs,
@@ -266,13 +270,22 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         loader_kwargs = {"num_workers": 4, "pin_memory": False}
 
-    transform = torchvision.transforms.Compose(
-        [
-            torchvision.transforms.Resize((224, 224)),
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
-        ]
-    )
+    if args.pretrained:
+        transform = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.Resize((224, 224)),
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+                #torchvision.transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            ]
+        )
+    else:
+        transform = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.Resize((224, 224)),
+                torchvision.transforms.ToTensor(),
+            ]
+        )
 
     paths, labels = dataset.load_data_paths(
         subtypes=SUBTYPES, path_to_slide_info=SLIDE_INFO_DIR
@@ -297,10 +310,6 @@ if __name__ == "__main__":
     del patches, label
     assert len(X) == len(y)
 
-    # y = np.asarray(y)
-    # if len(np.unique(y)) > 2:
-    #    y = dataset.one_hot_encode_labels(y)
-
     # Run
     print("\nStart of K-FOLD CROSSVALIDATION with " + str(args.folds) + " folds.")
     results = k_fold_cross_val(X, y, args)
@@ -309,6 +318,7 @@ if __name__ == "__main__":
     overall_acc = 0
     overall_auroc = 0
     overall_cm = np.zeros((len(SUBTYPES), len(SUBTYPES)))
+    overall_mcc = 0
     for key in results.keys():
         if "Accuracy" in key:
             overall_acc += results[key]
@@ -316,7 +326,11 @@ if __name__ == "__main__":
             overall_auroc += results[key]
         elif "Conf" in key:
             overall_cm += results[key]
+        elif "MCC" in key:
+            overall_mcc += results[key]
 
     print("Accuracy: {}".format(str(overall_acc / args.folds)))
     print("AUROC: {}".format(str(overall_auroc / args.folds)))
     print(overall_cm)
+    print("MCC: {}".format(str(overall_mcc / args.folds)))
+    
