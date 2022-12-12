@@ -288,31 +288,31 @@ class CLAM_SB(nn.Module):
 
         initialize_weights(self)
 
-    #def relocate(self):
-    #    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #    self.attention_net = self.attention_net.to(device)
-    #    self.classifiers = self.classifiers.to(device)
-    #    self.instance_classifiers = self.instance_classifiers.to(device)
+    def relocate(self):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.attention_net = self.attention_net.to(device)
+        self.classifiers = self.classifiers.to(device)
+        self.instance_classifiers = self.instance_classifiers.to(device)
 
     @staticmethod
-    def create_positive_targets(length):
-        return torch.full((length,), 1).long()
+    def create_positive_targets(length, device):
+        return torch.full((length,), 1, device=device).long()
 
     @staticmethod
-    def create_negative_targets(length):
-        return torch.full((length,), 0).long()
+    def create_negative_targets(length, device):
+        return torch.full((length,), 0, device=device).long()
 
     # instance-level evaluation for in-the-class attention branch
     def inst_eval(self, A, h, classifier):
-        # device = h.device
+        device = h.device
         if len(A.shape) == 1:
             A = A.view(1, -1)
         top_p_ids = torch.topk(A, self.k_sample)[1][-1]
         top_p = torch.index_select(h, dim=0, index=top_p_ids)
         top_n_ids = torch.topk(-A, self.k_sample, dim=1)[1][-1]
         top_n = torch.index_select(h, dim=0, index=top_n_ids)
-        p_targets = self.create_positive_targets(self.k_sample)
-        n_targets = self.create_negative_targets(self.k_sample)
+        p_targets = self.create_positive_targets(self.k_sample, device=device)
+        n_targets = self.create_negative_targets(self.k_sample, device=device)
 
         all_targets = torch.cat([p_targets, n_targets], dim=0)
         all_instances = torch.cat([top_p, top_n], dim=0)
@@ -323,12 +323,12 @@ class CLAM_SB(nn.Module):
 
     # instance-level evaluation for out-of-the-class attention branch
     def inst_eval_out(self, A, h, classifier):
-        # device = h.device
+        device = h.device
         if len(A.shape) == 1:
             A = A.view(1, -1)
         top_p_ids = torch.topk(A, self.k_sample)[1][-1]
         top_p = torch.index_select(h, dim=0, index=top_p_ids)
-        p_targets = self.create_negative_targets(self.k_sample)
+        p_targets = self.create_negative_targets(self.k_sample, device=device)
         logits = classifier(top_p)
         p_preds = torch.topk(logits, 1, dim=1)[1].squeeze(1)
         instance_loss = self.instance_loss_fn(logits, p_targets)
@@ -342,7 +342,7 @@ class CLAM_SB(nn.Module):
         return_features=False,
         attention_only=False,
     ):
-        # device = h.device
+        device = h.device
         A, h = self.attention_net(h)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
         if attention_only:
@@ -442,7 +442,7 @@ class CLAM_MB(CLAM_SB):
         return_features=False,
         attention_only=False,
     ):
-        # device = h.device
+        device = h.device
         A, h = self.attention_net(h)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
         if attention_only:
@@ -478,12 +478,9 @@ class CLAM_MB(CLAM_SB):
             if self.subtyping:
                 total_inst_loss /= len(self.instance_classifiers)
 
-        A = A.squeeze()
-        h = h.squeeze()
-        A = torch.transpose(A, 0, 1)
 
         M = torch.mm(A, h)
-        logits = torch.empty(1, self.n_classes).float().cuda()
+        logits = torch.empty(1, self.n_classes).float().to(device)
         for c in range(self.n_classes):
             logits[0, c] = self.classifiers[c](M[c])
         Y_hat = torch.topk(logits, 1, dim=1)[1]
@@ -507,6 +504,7 @@ class CLAM_Lightning(pl.LightningModule):
         self.save_hyperparameters()
         self.model = CLAM_MB(**model_kwargs)
         # self.example_input_array = next(iter(train_loader))[0]
+        self.model.relocate()
 
     def load_model(self, path):
         self.model.load_state_dict(torch.load(path), strict=False)
@@ -528,8 +526,10 @@ class CLAM_Lightning(pl.LightningModule):
 
     def _calculate_loss(self, batch, mode="train"):
         imgs, label = batch
+        imgs = imgs.squeeze()
         label = label.long()
-        logits, Y_prob, Y_hat, A_raw, results_dict = self.model(imgs)
+
+        logits, Y_prob, Y_hat, A_raw, results_dict = self.model(imgs, label=label, instance_eval=True)
         loss = F.cross_entropy(logits, label)
         acc = (logits.argmax(dim=-1) == label).float().mean()
 

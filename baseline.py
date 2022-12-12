@@ -7,6 +7,7 @@ import torch.nn as nn
 import torchvision
 
 import pytorch_lightning as pl
+from topk import SmoothTop1SVM
 
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report
@@ -150,7 +151,8 @@ def k_fold_cross_val(X, y, args, k: int = 5):
                 "dropout": True,
                 "k_sample": 8,
                 "n_classes": len(SUBTYPES),
-                "instance_loss_fn": nn.CrossEntropyLoss(),
+                #"instance_loss_fn": nn.CrossEntropyLoss(),
+                "instance_loss_fn": SmoothTop1SVM(n_classes=2).cuda(),
                 "subtyping": True,
             }
 
