@@ -741,7 +741,7 @@ class ClassicBaseline(pl.LightningModule):
             if model_name == "resnet50":
                 backbone = models.resnet50(weights="IMAGENET1K_V2")
             elif model_name == "resnet18":
-                backbone = models.resnet18(weights="IMAGENET1K_V2")
+                backbone = models.resnet18(weights="IMAGENET1K_V1")
             elif model_name == "resnet50-bottlenecked":
                 backbone = Resnet50_baseline(pretrained=self.use_pretrained)
         else:

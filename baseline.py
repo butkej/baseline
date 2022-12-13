@@ -177,7 +177,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
                 print(model)
 
             train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
-            # del X_train, y_train
+            del X_train, y_train
             val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
 
             model.train()
@@ -189,7 +189,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             results["Classification Report for Fold {}".format(fold)] = cr
             results["Conf Matrix for Fold {}".format(fold)] = cm
             results["MCC for Fold {}".format(fold)] = mcc
-            # del train_dataset, val_dataset, X_val, y_val, model
+            del train_dataset, val_dataset, X_val, y_val, model
 
         else:
             print("Error! Choosen baseline strategy is unclear")
@@ -247,8 +247,8 @@ if __name__ == "__main__":
 
     # Config
     EXPERIMENT_DIR = "/home/butkej/work/experiments/baseline-prototype"
-    # DATA_DIR = "/ml/wsi/"
-    DATA_DIR = "/mnt/crest/wsi/"
+    DATA_DIR = "/ml/wsi/"
+    #DATA_DIR = "/mnt/crest/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
     PATCH_INFO_DIR = "csv_JMR/"
     SUBTYPES = ["DLBCL", "FL", "Reactive"]
