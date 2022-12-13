@@ -181,7 +181,7 @@ def lightning_mode(args):
         model = custom_model.ViT(model_kwargs, lr=1e-4)
         if args.pretrained:
             model.load_model(VIT_PRETRAINED_PATH)
-        return model
+        return model, None
 
     else:
         model, input_size = choose_model(

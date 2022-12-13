@@ -168,29 +168,6 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             results["Conf Matrix for Fold {}".format(fold)] = cm
             results["MCC for Fold {}".format(fold)] = mcc
 
-        elif args.baseline == "vit":
-            # Model initilization or reinit if fold > 1
-            model = utils.lightning_mode(args)
-            if args.freeze:
-                custom_model.freeze_model_layers(model, freeze_ratio=0.5)
-            if fold == 1:
-                print(model)
-
-            train_dataset = dataset.convert_to_tile_dataset(X_train, y_train)
-            del X_train, y_train
-            val_dataset = dataset.convert_to_tile_dataset(X_val, y_val)
-
-            model.train()
-
-            classic(args, model, train_dataset, val_dataset)
-            acc, auc, cr, cm, mcc = eval_patientwise(model, X_val, y_val)
-            results["Accuracy for Fold {}".format(fold)] = acc
-            results["ROC-AUC for Fold {}".format(fold)] = auc
-            results["Classification Report for Fold {}".format(fold)] = cr
-            results["Conf Matrix for Fold {}".format(fold)] = cm
-            results["MCC for Fold {}".format(fold)] = mcc
-            del train_dataset, val_dataset, X_val, y_val, model
-
         else:
             print("Error! Choosen baseline strategy is unclear")
 
@@ -247,8 +224,8 @@ if __name__ == "__main__":
 
     # Config
     EXPERIMENT_DIR = "/home/butkej/work/experiments/baseline-prototype"
-    DATA_DIR = "/ml/wsi/"
-    #DATA_DIR = "/mnt/crest/wsi/"
+    #DATA_DIR = "/ml/wsi/"
+    DATA_DIR = "/mnt/crest/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
     PATCH_INFO_DIR = "csv_JMR/"
     SUBTYPES = ["DLBCL", "FL", "Reactive"]
