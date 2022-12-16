@@ -9,7 +9,12 @@ import torchvision
 import pytorch_lightning as pl
 
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, matthews_corrcoef
+from sklearn.metrics import (
+    roc_auc_score,
+    confusion_matrix,
+    classification_report,
+    matthews_corrcoef,
+)
 from src import utils, custom_model, dataset
 
 
@@ -55,7 +60,7 @@ def eval_patientwise(model, data, labels, mode: str = "classic"):
             y_preds_slide.append(pred.argmax(dim=-1).detach().cpu().numpy())
             if pred.argmax(dim=-1).detach().cpu().numpy() == wsi_label:
                 acc += 1
-            
+
     print("Eval Accuracy patient wise is:")
     acc_patientwise = acc / len(labels)
     print(str(acc_patientwise))
@@ -70,19 +75,21 @@ def eval_patientwise(model, data, labels, mode: str = "classic"):
 
     print("Classification report:")
     cr = classification_report(
-        y_true=true_slide_labels, y_pred=y_preds_slide, target_names=SUBTYPES, zero_division=0
+        y_true=true_slide_labels,
+        y_pred=y_preds_slide,
+        target_names=SUBTYPES,
+        zero_division=0,
     )
     print(cr)
 
     print("Confusion Matrix:")
     cm = confusion_matrix(y_true=true_slide_labels, y_pred=y_preds_slide)
     print(cm)
-    
+
     print("Matthews Corr Coeff:")
     mcc = matthews_corrcoef(y_true=true_slide_labels, y_pred=y_preds_slide)
     print(mcc)
     return acc_patientwise, auc, cr, cm, mcc
-
 
 
 def k_fold_cross_val(X, y, args, k: int = 5):
@@ -132,6 +139,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
 
         elif args.baseline == "clam":
             from topk import SmoothTop1SVM
+
             feature_extractor = custom_model.Resnet50_baseline(
                 pretrained=args.pretrained
             )
@@ -153,7 +161,7 @@ def k_fold_cross_val(X, y, args, k: int = 5):
                 "dropout": True,
                 "k_sample": 8,
                 "n_classes": len(SUBTYPES),
-                #"instance_loss_fn": nn.CrossEntropyLoss(),
+                # "instance_loss_fn": nn.CrossEntropyLoss(),
                 "instance_loss_fn": SmoothTop1SVM(n_classes=2).cuda(),
                 "subtyping": True,
             }
@@ -161,7 +169,9 @@ def k_fold_cross_val(X, y, args, k: int = 5):
             model = custom_model.CLAM_Lightning(model_kwargs)
             clam(args, model, train_dataset, val_dataset)
 
-            acc, auc, cr, cm, mcc= eval_patientwise(model, X_val_features, y_val, mode="bag")
+            acc, auc, cr, cm, mcc = eval_patientwise(
+                model, X_val_features, y_val, mode="bag"
+            )
             results["Accuracy for Fold {}".format(fold)] = acc
             results["ROC-AUC for Fold {}".format(fold)] = auc
             results["Classification Report for Fold {}".format(fold)] = cr
@@ -224,7 +234,7 @@ if __name__ == "__main__":
 
     # Config
     EXPERIMENT_DIR = "/home/butkej/work/experiments/baseline-prototype"
-    #DATA_DIR = "/ml/wsi/"
+    # DATA_DIR = "/ml/wsi/"
     DATA_DIR = "/mnt/crest/wsi/"
     SLIDE_INFO_DIR = "slide_ID/"
     PATCH_INFO_DIR = "csv_JMR/"
@@ -252,8 +262,10 @@ if __name__ == "__main__":
             [
                 torchvision.transforms.Resize((224, 224)),
                 torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
-                #torchvision.transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+                torchvision.transforms.Normalize(
+                    mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
+                )
+                # torchvision.transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
             ]
         )
     else:
@@ -266,7 +278,7 @@ if __name__ == "__main__":
 
     paths, labels = dataset.load_data_paths(
         subtypes=SUBTYPES, path_to_slide_info=SLIDE_INFO_DIR
-    )  # slides is list of all slides and their labels
+    )
 
     X, y = [], []
     for slide, target in zip(paths, labels):
@@ -310,4 +322,3 @@ if __name__ == "__main__":
     print("AUROC: {}".format(str(overall_auroc / args.folds)))
     print(overall_cm)
     print("MCC: {}".format(str(overall_mcc / args.folds)))
-    
